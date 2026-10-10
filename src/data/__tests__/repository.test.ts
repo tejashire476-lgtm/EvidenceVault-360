@@ -21,6 +21,9 @@ import {
 import {
   generateCanonicalStorageKey,
   validateEvidenceFile,
+  validateFileSignature,
+  validateMimeConsistency,
+  generateSyntheticForensicPayload,
   generateSignedUrl,
   verifySignedUrl,
   SecureEvidenceStorageEngine,
@@ -2881,5 +2884,339 @@ test('63. Audit Review Scheduler lifecycle: Correctly reports manual on-demand s
   assert.equal(stoppedStatus.mode, 'MANUAL_ON_DEMAND');
   assert.equal(stoppedStatus.isIntervalActive, false);
 });
+
+// ============================================================================
+// Phase 11 / Ingestion Validation: Image Support, Signatures & Ingestion Pipeline
+// ============================================================================
+
+test('64. Valid PNG evidence attachment: Passes signature check, hashes original bytes, and completes ingestion', async () => {
+  const db = new EvidenceVaultDatabase();
+  await seedDatabase(db);
+  const storage = new SecureEvidenceStorageEngine();
+
+  // 1. Create Case
+  const c = await db.createCase({
+    id: 'CASE-PNG-01',
+    case_reference: 'EV-CASE-2026-PNG',
+    title: 'Surveillance Camera Frame Seizure',
+    category: 'Cyber Forensics',
+    incident_date: '2026-10-10',
+    assigned_officer_id: 'USR-POLICE-01',
+    created_by: 'USR-POLICE-01',
+  });
+
+  // 2. Create Police Evidence Record
+  const ev = await db.createEvidence({
+    id: 'EVD-PNG-01',
+    case_id: c.id,
+    description: 'Surveillance Still Camera Frame Extract (PNG)',
+    evidence_type: 'MEDIA',
+    source_description: 'ATM CCTVSecurity Cam 04',
+    collected_by: 'USR-POLICE-01',
+    collected_at: new Date().toISOString(),
+    created_by: 'USR-POLICE-01',
+  });
+
+  // 3. Prepare valid PNG binary artifact (8-byte PNG header + chunk payload)
+  const pngHeader = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const pngBody = new TextEncoder().encode('IHDR_VALID_PNG_PAYLOAD_BYTES_ATM_SURVEILLANCE_IMAGE');
+  const pngBytes = new Uint8Array(pngHeader.length + pngBody.length);
+  pngBytes.set(pngHeader);
+  pngBytes.set(pngBody, pngHeader.length);
+
+  // 4. Validate filename, MIME type, size and file signature
+  const validation = validateEvidenceFile('atm_frame_04.png', pngBytes.length, 'MEDIA', pngBytes, 'image/png');
+  assert.equal(validation.isValid, true);
+  assert.equal(validation.detectedMimeType, 'image/png');
+
+  // 5. Ingest through Secure Evidence Storage Engine
+  const sha256 = await computeSha256(pngBytes);
+  const session = storage.initiateMultipartUpload({
+    caseId: c.id,
+    evidenceId: ev.id,
+    versionId: 'v1',
+    originalFilename: 'atm_frame_04.png',
+    contentType: validation.detectedMimeType,
+    totalSizeBytes: pngBytes.length,
+    evidenceType: 'MEDIA',
+    uploadedBy: 'USR-POLICE-01',
+    expectedSha256: sha256,
+  });
+
+  await storage.uploadPart(session.uploadId, 1, pngBytes);
+  const completed = await storage.completeMultipartUpload(session.uploadId, pngBytes);
+  assert.equal(completed.sha256, sha256);
+  assert.equal(storage.hasObject(completed.storageKey), true);
+
+  // 6. Cryptographic Registration in DB & Immutable Audit Ledger
+  const fileVer = await db.addFileVersion({
+    id: 'FILE-PNG-01',
+    evidence_id: ev.id,
+    original_filename: 'atm_frame_04.png',
+    generated_storage_key: completed.storageKey,
+    content_type: 'image/png',
+    file_size: completed.totalBytes,
+    sha256_hash: completed.sha256,
+    baseline_created_at: new Date().toISOString(),
+    uploaded_by: 'USR-POLICE-01',
+  });
+
+  assert.equal(fileVer.sha256_hash, sha256);
+  assert.equal(db.getFileVersion(fileVer.id)?.sha256_hash, sha256);
+
+  // 7. Verify post-ingestion verification result is MATCH
+  const verif = await verifyEvidenceFileVersionIntegrity({
+    fileVersionId: fileVer.id,
+    actorId: 'USR-FORENSIC-01',
+    actorRole: 'FORENSIC_EXAMINER',
+    storageEngine: storage,
+    database: db,
+  });
+  assert.equal(verif.result, 'MATCH');
+});
+
+test('65. Valid JPG, JPEG, and WEBP image uploads: Validate headers, MIME types and storage completion', async () => {
+  const storage = new SecureEvidenceStorageEngine();
+
+  // JPG / JPEG (FF D8 FF)
+  const jpgHeader = new Uint8Array([0xff, 0xd8, 0xff]);
+  const jpgBody = new TextEncoder().encode('JFIF_EXIF_TEST_CAMERA_PHOTO_PAYLOAD');
+  const jpgBytes = new Uint8Array(jpgHeader.length + jpgBody.length);
+  jpgBytes.set(jpgHeader);
+  jpgBytes.set(jpgBody, jpgHeader.length);
+
+  const jpgVal = validateEvidenceFile('suspect_photo.jpg', jpgBytes.length, 'MEDIA', jpgBytes, 'image/jpeg');
+  assert.equal(jpgVal.isValid, true);
+  assert.equal(jpgVal.detectedMimeType, 'image/jpeg');
+
+  const jpgSha = await computeSha256(jpgBytes);
+  const sJpg = storage.initiateMultipartUpload({
+    caseId: 'CASE-IMG',
+    evidenceId: 'EVD-JPG',
+    versionId: 'v1',
+    originalFilename: 'suspect_photo.jpg',
+    contentType: 'image/jpeg',
+    totalSizeBytes: jpgBytes.length,
+    evidenceType: 'MEDIA',
+    uploadedBy: 'USR-POLICE-01',
+    expectedSha256: jpgSha,
+  });
+  await storage.uploadPart(sJpg.uploadId, 1, jpgBytes);
+  const cJpg = await storage.completeMultipartUpload(sJpg.uploadId, jpgBytes);
+  assert.equal(cJpg.sha256, jpgSha);
+
+  // WEBP (RIFF....WEBP)
+  const webpHeader = new Uint8Array([
+    0x52, 0x49, 0x46, 0x46, // 'RIFF'
+    0x20, 0x00, 0x00, 0x00, // size
+    0x57, 0x45, 0x42, 0x50, // 'WEBP'
+  ]);
+  const webpBody = new TextEncoder().encode('VP8_TEST_WEBP_IMAGE_PAYLOAD');
+  const webpBytes = new Uint8Array(webpHeader.length + webpBody.length);
+  webpBytes.set(webpHeader);
+  webpBytes.set(webpBody, webpHeader.length);
+
+  const webpVal = validateEvidenceFile('dashcam_snapshot.webp', webpBytes.length, 'MEDIA', webpBytes, 'image/webp');
+  assert.equal(webpVal.isValid, true);
+  assert.equal(webpVal.detectedMimeType, 'image/webp');
+});
+
+test('66. Valid PDF document upload: Validates %PDF- header, application/pdf MIME, and custody registration', async () => {
+  const db = new EvidenceVaultDatabase();
+  await seedDatabase(db);
+  const storage = new SecureEvidenceStorageEngine();
+
+  const c = await db.createCase({
+    id: 'CASE-PDF-01',
+    case_reference: 'EV-CASE-2026-PDF',
+    title: 'Judicial Search Warrant Execution',
+    category: 'Legal Filings',
+    incident_date: '2026-10-09',
+    assigned_officer_id: 'USR-POLICE-01',
+    created_by: 'USR-POLICE-01',
+  });
+
+  const ev = await db.createEvidence({
+    id: 'EVD-PDF-01',
+    case_id: c.id,
+    description: 'Signed Court Search Warrant Order (PDF)',
+    evidence_type: 'DOCUMENT',
+    source_description: 'Magistrate Court Registry',
+    collected_by: 'USR-POLICE-01',
+    collected_at: new Date().toISOString(),
+    created_by: 'USR-POLICE-01',
+  });
+
+  const pdfBytes = new TextEncoder().encode('%PDF-1.7\n%Signed Order by Magistrate bench 4\n%%EOF');
+  const pdfVal = validateEvidenceFile('signed_warrant.pdf', pdfBytes.length, 'DOCUMENT', pdfBytes, 'application/pdf');
+  assert.equal(pdfVal.isValid, true);
+  assert.equal(pdfVal.detectedMimeType, 'application/pdf');
+
+  const pdfSha = await computeSha256(pdfBytes);
+  const sPdf = storage.initiateMultipartUpload({
+    caseId: c.id,
+    evidenceId: ev.id,
+    versionId: 'v1',
+    originalFilename: 'signed_warrant.pdf',
+    contentType: 'application/pdf',
+    totalSizeBytes: pdfBytes.length,
+    evidenceType: 'DOCUMENT',
+    uploadedBy: 'USR-POLICE-01',
+    expectedSha256: pdfSha,
+  });
+  await storage.uploadPart(sPdf.uploadId, 1, pdfBytes);
+  const cPdf = await storage.completeMultipartUpload(sPdf.uploadId, pdfBytes);
+  assert.equal(cPdf.sha256, pdfSha);
+});
+
+test('67. File extension whitelist enforcement: Rejects dangerous executable extensions and unknown formats', () => {
+  // Disallowed executables & scripts
+  const exeVal = validateEvidenceFile('backdoor.exe', 1024, 'DISK_IMAGE');
+  assert.equal(exeVal.isValid, false);
+  assert.match(exeVal.errorMessage || '', /executable\/script format and cannot be uploaded/);
+
+  const shVal = validateEvidenceFile('payload.sh', 256, 'SYSTEM_LOG');
+  assert.equal(shVal.isValid, false);
+  assert.match(shVal.errorMessage || '', /executable\/script format and cannot be uploaded/);
+
+  const batVal = validateEvidenceFile('autorun.bat', 128, 'MEDIA');
+  assert.equal(batVal.isValid, false);
+
+  // Unknown / unpermitted extension
+  const docxVal = validateEvidenceFile('brief.docx', 512, 'DOCUMENT');
+  assert.equal(docxVal.isValid, false);
+  assert.match(docxVal.errorMessage || '', /Invalid file format '\.docx'/);
+
+  const mp4Val = validateEvidenceFile('video.mp4', 10240, 'MEDIA');
+  assert.equal(mp4Val.isValid, false);
+  assert.match(mp4Val.errorMessage || '', /Invalid file format '\.mp4'/);
+});
+
+test('68. Mismatched and spoofed MIME types: Enforces consistency and rejects spoofing attempts', () => {
+  // Spoofed: extension .png declared as application/pdf
+  const spoof1 = validateMimeConsistency('.png', 'application/pdf');
+  assert.equal(spoof1.isValid, false);
+  assert.match(spoof1.errorMessage || '', /MIME type mismatch/);
+
+  // Spoofed: extension .pdf declared as image/png
+  const spoof2 = validateMimeConsistency('.pdf', 'image/png');
+  assert.equal(spoof2.isValid, false);
+  assert.match(spoof2.errorMessage || '', /MIME type mismatch/);
+
+  // Spoofed: extension .jpg declared as text/plain
+  const spoof3 = validateMimeConsistency('.jpg', 'text/plain');
+  assert.equal(spoof3.isValid, false);
+  assert.match(spoof3.errorMessage || '', /MIME type mismatch/);
+
+  // Executable MIME type disguised under .png
+  const spoof4 = validateMimeConsistency('.png', 'application/x-executable');
+  assert.equal(spoof4.isValid, false);
+  assert.match(spoof4.errorMessage || '', /executable format and cannot be uploaded/);
+
+  // Compatible MIME types pass
+  assert.equal(validateMimeConsistency('.png', 'image/png').isValid, true);
+  assert.equal(validateMimeConsistency('.pdf', 'application/pdf').isValid, true);
+  assert.equal(validateMimeConsistency('.jpg', 'image/jpeg').isValid, true);
+  assert.equal(validateMimeConsistency('.webp', 'image/webp').isValid, true);
+  assert.equal(validateMimeConsistency('.raw', 'application/octet-stream').isValid, true);
+});
+
+test('69. Corrupted file signature rejection: Blocks corrupted PNG, PDF, and empty files', () => {
+  // Empty file (0 bytes)
+  const emptyRes = validateFileSignature('.png', new Uint8Array([]));
+  assert.equal(emptyRes.isValid, false);
+  assert.match(emptyRes.errorMessage || '', /File is empty \(0 bytes\)/);
+
+  // Corrupted PNG: random ASCII bytes without 89 50 4E 47 0D 0A 1A 0A header
+  const badPng = new TextEncoder().encode('NOT_A_REAL_PNG_FILE_HEADER_CORRUPTED');
+  const badPngRes = validateFileSignature('.png', badPng);
+  assert.equal(badPngRes.isValid, false);
+  assert.match(badPngRes.errorMessage || '', /does not match PNG magic header/);
+
+  // Corrupted PDF: bytes without %PDF-
+  const badPdf = new TextEncoder().encode('CORRUPTED_DOCUMENT_WITHOUT_PDF_HEADER');
+  const badPdfRes = validateFileSignature('.pdf', badPdf);
+  assert.equal(badPdfRes.isValid, false);
+  assert.match(badPdfRes.errorMessage || '', /does not match PDF header/);
+
+  // Corrupted JPEG: bytes without FF D8 FF
+  const badJpg = new TextEncoder().encode('BAD_JPEG_BYTES_HERE');
+  const badJpgRes = validateFileSignature('.jpg', badJpg);
+  assert.equal(badJpgRes.isValid, false);
+  assert.match(badJpgRes.errorMessage || '', /does not match JPEG magic header/);
+
+  // Full validateEvidenceFile checks with corrupted bytes
+  const fullBadVal = validateEvidenceFile('corrupted.png', badPng.length, 'MEDIA', badPng, 'image/png');
+  assert.equal(fullBadVal.isValid, false);
+  assert.match(fullBadVal.errorMessage || '', /does not match PNG magic header/);
+});
+
+test('70. Backend validation in completeMultipartUpload: Aborts upload and discards corrupted file bytes', async () => {
+  const storage = new SecureEvidenceStorageEngine();
+
+  // Initiated with valid session parameters
+  const session = storage.initiateMultipartUpload({
+    caseId: 'CASE-CORRUPT-TEST',
+    evidenceId: 'EVD-CORRUPT-TEST',
+    versionId: 'v1',
+    originalFilename: 'evidence.png',
+    contentType: 'image/png',
+    totalSizeBytes: 100,
+    evidenceType: 'MEDIA',
+    uploadedBy: 'USR-POLICE-01',
+  });
+
+  // Client uploads part with corrupted bytes (not matching PNG signature)
+  const corruptedBytes = new TextEncoder().encode('FAKE_CORRUPTED_PNG_BYTES_WITHOUT_SIGNATURE_HEADER_1234567890');
+  await storage.uploadPart(session.uploadId, 1, corruptedBytes);
+
+  // Server-side completeMultipartUpload must execute backend validation and reject
+  await assert.rejects(
+    async () => {
+      await storage.completeMultipartUpload(session.uploadId, corruptedBytes);
+    },
+    /Backend Validation Failure.*PNG magic header/
+  );
+
+  // Must NOT be stored in object store
+  assert.equal(storage.hasObject(session.storageKey), false);
+});
+
+test('71. Category size limits: Enforces 500 MB Document limit and 5 GB Media limit', () => {
+  // Document: 500 MB limit (524288000 bytes)
+  const docOver = 524288001;
+  const docOverVal = validateEvidenceFile('brief.pdf', docOver, 'DOCUMENT');
+  assert.equal(docOverVal.isValid, false);
+  assert.match(docOverVal.errorMessage || '', /exceeds configured maximum limit/);
+
+  const docUnder = 10 * 1024 * 1024; // 10 MB
+  const docUnderVal = validateEvidenceFile('brief.pdf', docUnder, 'DOCUMENT');
+  assert.equal(docUnderVal.isValid, true);
+
+  // Media: 5 GB limit (5368709120 bytes)
+  const mediaOver = 5368709121;
+  const mediaOverVal = validateEvidenceFile('scene.png', mediaOver, 'MEDIA');
+  assert.equal(mediaOverVal.isValid, false);
+  assert.match(mediaOverVal.errorMessage || '', /exceeds configured maximum limit/);
+
+  const mediaUnder = 4 * 1024 * 1024; // 4 MB
+  const mediaUnderVal = validateEvidenceFile('scene.png', mediaUnder, 'MEDIA');
+  assert.equal(mediaUnderVal.isValid, true);
+});
+
+test('72. Synthetic payload helper: Generates authentic headers for all supported image and document types', () => {
+  const pngPayload = generateSyntheticForensicPayload('test_photo.png');
+  assert.equal(validateFileSignature('.png', pngPayload).isValid, true);
+
+  const jpgPayload = generateSyntheticForensicPayload('test_photo.jpg');
+  assert.equal(validateFileSignature('.jpg', jpgPayload).isValid, true);
+
+  const webpPayload = generateSyntheticForensicPayload('test_photo.webp');
+  assert.equal(validateFileSignature('.webp', webpPayload).isValid, true);
+
+  const pdfPayload = generateSyntheticForensicPayload('test_report.pdf');
+  assert.equal(validateFileSignature('.pdf', pdfPayload).isValid, true);
+});
+
 
 

@@ -5,6 +5,7 @@ import { computeSha256 } from '../utils/crypto.ts';
 import {
   globalStorageEngine,
   validateEvidenceFile,
+  generateSyntheticForensicPayload,
   generateSignedUrl,
   CHUNK_SIZE_BYTES,
 } from '../utils/storage.ts';
@@ -589,16 +590,9 @@ export function useVaultOperations() {
     }
 
     const filename = selectedLocalFile ? selectedLocalFile.name : newEvFilename.trim();
-    const sizeBytes = selectedLocalFile ? selectedLocalFile.size : parseInt(newEvFileSize, 10) || 1048576;
 
     if (!newEvDescription.trim() || !filename) {
       setNewEvError('Description and Filename are required.');
-      return;
-    }
-
-    const validation = validateEvidenceFile(filename, sizeBytes, newEvType);
-    if (!validation.isValid) {
-      setNewEvError(validation.errorMessage || 'Invalid file.');
       return;
     }
 
@@ -609,7 +603,19 @@ export function useVaultOperations() {
         const buffer = await selectedLocalFile.arrayBuffer();
         fileBytes = new Uint8Array(buffer);
       } else {
-        fileBytes = new TextEncoder().encode(`Simulated forensic payload for ${filename} at ${Date.now()}`);
+        fileBytes = generateSyntheticForensicPayload(filename);
+      }
+
+      const validation = validateEvidenceFile(
+        filename,
+        fileBytes.length,
+        newEvType,
+        fileBytes,
+        selectedLocalFile?.type
+      );
+      if (!validation.isValid) {
+        setNewEvError(validation.errorMessage || 'Invalid file.');
+        return;
       }
 
       const calculatedHash = await computeSha256(fileBytes);

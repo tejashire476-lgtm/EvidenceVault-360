@@ -336,6 +336,7 @@ export interface MultipartUploadSession {
   originalFilename: string;
   contentType: string;
   totalSizeBytes: number;
+  evidenceType?: EvidenceType;
   expectedSha256?: string;
   parts: MultipartUploadPart[];
   status: 'INITIALIZED' | 'IN_PROGRESS' | 'COMPLETED' | 'ABORTED';

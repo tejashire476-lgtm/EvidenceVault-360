@@ -114,6 +114,7 @@ export const RegisterEvidenceModal: React.FC<RegisterEvidenceModalProps> = ({
               <input
                 id="ev-file-input"
                 type="file"
+                accept=".raw,.dd,.img,.e01,.pcap,.pcapng,.dmp,.mem,.log,.vmdk,.pdf,.zip,.tar,.gz,.csv,.json,.txt,.iso,.bin,.png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp,application/pdf"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
@@ -121,6 +122,11 @@ export const RegisterEvidenceModal: React.FC<RegisterEvidenceModalProps> = ({
                     setSelectedLocalFile(file);
                     setNewEvFilename(file.name);
                     setNewEvFileSize(String(file.size));
+                    const dotIdx = file.name.lastIndexOf('.');
+                    const ext = dotIdx !== -1 ? file.name.slice(dotIdx).toLowerCase() : '';
+                    if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext) && newEvType === 'DISK_IMAGE') {
+                      setNewEvType('MEDIA');
+                    }
                   }
                 }}
                 disabled={isUploading}
@@ -134,7 +140,7 @@ export const RegisterEvidenceModal: React.FC<RegisterEvidenceModalProps> = ({
                 )}
               </div>
               <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                Whitelisted: .raw, .dd, .img, .e01, .pcap, .dmp, .log, .pdf, .zip, .tar, .bin
+                Whitelisted: .png, .jpg, .jpeg, .webp, .pdf, .raw, .dd, .img, .e01, .pcap, .dmp, .log, .zip, .tar, .bin
               </div>
             </div>
           </div>

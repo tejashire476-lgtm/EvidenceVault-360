@@ -40,7 +40,228 @@ export const ALLOWED_FORENSIC_EXTENSIONS = new Set([
   '.txt',
   '.iso',
   '.bin',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.webp',
 ]);
+
+export const EXTENSION_MIME_MAP: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.pdf': 'application/pdf',
+  '.pcap': 'application/vnd.tcpdump.pcap',
+  '.pcapng': 'application/vnd.tcpdump.pcap',
+  '.zip': 'application/zip',
+  '.tar': 'application/x-tar',
+  '.gz': 'application/gzip',
+  '.csv': 'text/csv',
+  '.json': 'application/json',
+  '.txt': 'text/plain',
+  '.log': 'text/plain',
+  '.raw': 'application/octet-stream',
+  '.dd': 'application/octet-stream',
+  '.img': 'application/octet-stream',
+  '.e01': 'application/octet-stream',
+  '.dmp': 'application/octet-stream',
+  '.mem': 'application/octet-stream',
+  '.vmdk': 'application/octet-stream',
+  '.iso': 'application/octet-stream',
+  '.bin': 'application/octet-stream',
+};
+
+/**
+ * Validates magic headers / file signatures for structured formats.
+ */
+export function validateFileSignature(
+  ext: string,
+  bytes: Uint8Array
+): { isValid: boolean; errorMessage?: string } {
+  if (bytes.length === 0) {
+    return { isValid: false, errorMessage: 'Corrupted file: File is empty (0 bytes).' };
+  }
+
+  const lowerExt = ext.toLowerCase();
+
+  if (lowerExt === '.png') {
+    // PNG 8-byte magic header: 89 50 4E 47 0D 0A 1A 0A
+    if (
+      bytes.length < 8 ||
+      bytes[0] !== 0x89 ||
+      bytes[1] !== 0x50 ||
+      bytes[2] !== 0x4e ||
+      bytes[3] !== 0x47 ||
+      bytes[4] !== 0x0d ||
+      bytes[5] !== 0x0a ||
+      bytes[6] !== 0x1a ||
+      bytes[7] !== 0x0a
+    ) {
+      return {
+        isValid: false,
+        errorMessage: 'Corrupted file or invalid signature: File content does not match PNG magic header (89 50 4E 47 0D 0A 1A 0A).',
+      };
+    }
+  } else if (lowerExt === '.jpg' || lowerExt === '.jpeg') {
+    // JPEG 3-byte magic header: FF D8 FF
+    if (
+      bytes.length < 3 ||
+      bytes[0] !== 0xff ||
+      bytes[1] !== 0xd8 ||
+      bytes[2] !== 0xff
+    ) {
+      return {
+        isValid: false,
+        errorMessage: 'Corrupted file or invalid signature: File content does not match JPEG magic header (FF D8 FF).',
+      };
+    }
+  } else if (lowerExt === '.webp') {
+    // WEBP: RIFF at 0..3 and WEBP at 8..11
+    if (
+      bytes.length < 12 ||
+      bytes[0] !== 0x52 || // 'R'
+      bytes[1] !== 0x49 || // 'I'
+      bytes[2] !== 0x46 || // 'F'
+      bytes[3] !== 0x46 || // 'F'
+      bytes[8] !== 0x57 || // 'W'
+      bytes[9] !== 0x45 || // 'E'
+      bytes[10] !== 0x42 || // 'B'
+      bytes[11] !== 0x50 // 'P'
+    ) {
+      return {
+        isValid: false,
+        errorMessage: 'Corrupted file or invalid signature: File content does not match WEBP container header (RIFF....WEBP).',
+      };
+    }
+  } else if (lowerExt === '.pdf') {
+    // PDF: %PDF- (25 50 44 46 2D)
+    if (
+      bytes.length < 5 ||
+      bytes[0] !== 0x25 || // '%'
+      bytes[1] !== 0x50 || // 'P'
+      bytes[2] !== 0x44 || // 'D'
+      bytes[3] !== 0x46 || // 'F'
+      bytes[4] !== 0x2d // '-'
+    ) {
+      return {
+        isValid: false,
+        errorMessage: 'Corrupted file or invalid signature: File content does not match PDF header (%PDF-).',
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Validates declared MIME type against expected extension mappings.
+ */
+export function validateMimeConsistency(
+  ext: string,
+  declaredMimeType?: string
+): { isValid: boolean; errorMessage?: string } {
+  if (!declaredMimeType) {
+    return { isValid: true };
+  }
+
+  const mime = declaredMimeType.trim().toLowerCase();
+  if (mime === '' || mime === 'application/octet-stream') {
+    return { isValid: true };
+  }
+
+  // Reject executable / script MIME types immediately
+  const executableMimes = [
+    'application/x-executable',
+    'application/x-msdownload',
+    'application/x-sh',
+    'application/x-bat',
+    'application/x-msdos-program',
+    'application/javascript',
+    'text/javascript',
+  ];
+  if (executableMimes.includes(mime)) {
+    return {
+      isValid: false,
+      errorMessage: `Security violation: Declared MIME type '${declaredMimeType}' is an executable format and cannot be uploaded.`,
+    };
+  }
+
+  const lowerExt = ext.toLowerCase();
+  if (lowerExt === '.png' && mime !== 'image/png') {
+    return {
+      isValid: false,
+      errorMessage: `MIME type mismatch: File extension '${ext}' does not match declared MIME type '${declaredMimeType}'. Expected 'image/png'.`,
+    };
+  }
+  if ((lowerExt === '.jpg' || lowerExt === '.jpeg') && mime !== 'image/jpeg' && mime !== 'image/jpg') {
+    return {
+      isValid: false,
+      errorMessage: `MIME type mismatch: File extension '${ext}' does not match declared MIME type '${declaredMimeType}'. Expected 'image/jpeg'.`,
+    };
+  }
+  if (lowerExt === '.webp' && mime !== 'image/webp') {
+    return {
+      isValid: false,
+      errorMessage: `MIME type mismatch: File extension '${ext}' does not match declared MIME type '${declaredMimeType}'. Expected 'image/webp'.`,
+    };
+  }
+  if (lowerExt === '.pdf' && mime !== 'application/pdf') {
+    return {
+      isValid: false,
+      errorMessage: `MIME type mismatch: File extension '${ext}' does not match declared MIME type '${declaredMimeType}'. Expected 'application/pdf'.`,
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Helper to generate authentic synthetic binary headers for simulated uploads.
+ */
+export function generateSyntheticForensicPayload(filename: string): Uint8Array {
+  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
+  const textPayload = `Simulated forensic payload for ${filename} at ${Date.now()}`;
+  const textBytes = new TextEncoder().encode(textPayload);
+
+  if (ext === '.png') {
+    // 8-byte PNG header: 89 50 4E 47 0D 0A 1A 0A followed by payload
+    const pngHeader = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    const result = new Uint8Array(pngHeader.length + textBytes.length);
+    result.set(pngHeader);
+    result.set(textBytes, pngHeader.length);
+    return result;
+  }
+  if (ext === '.jpg' || ext === '.jpeg') {
+    // 3-byte JPEG header: FF D8 FF followed by payload
+    const jpgHeader = new Uint8Array([0xff, 0xd8, 0xff]);
+    const result = new Uint8Array(jpgHeader.length + textBytes.length);
+    result.set(jpgHeader);
+    result.set(textBytes, jpgHeader.length);
+    return result;
+  }
+  if (ext === '.webp') {
+    // RIFF (4) + size (4) + WEBP (4)
+    const webpHeader = new Uint8Array([
+      0x52, 0x49, 0x46, 0x46, // 'RIFF'
+      0x00, 0x00, 0x00, 0x00, // size
+      0x57, 0x45, 0x42, 0x50, // 'WEBP'
+    ]);
+    const result = new Uint8Array(webpHeader.length + textBytes.length);
+    result.set(webpHeader);
+    result.set(textBytes, webpHeader.length);
+    return result;
+  }
+  if (ext === '.pdf') {
+    const pdfHeader = new TextEncoder().encode('%PDF-1.7\n%');
+    const result = new Uint8Array(pdfHeader.length + textBytes.length);
+    result.set(pdfHeader);
+    result.set(textBytes, pdfHeader.length);
+    return result;
+  }
+
+  return textBytes;
+}
 
 export const DISALLOWED_EXECUTABLE_EXTENSIONS = new Set([
   '.exe',
@@ -106,7 +327,9 @@ export function generateCanonicalStorageKey(
 export function validateEvidenceFile(
   filename: string,
   sizeBytes: number,
-  evidenceType: EvidenceType
+  evidenceType: EvidenceType,
+  fileBytes?: Uint8Array,
+  declaredMimeType?: string
 ): FileValidationResult {
   const cleanName = filename.trim();
   const lowerName = cleanName.toLowerCase();
@@ -121,7 +344,7 @@ export function validateEvidenceFile(
       sanitizedStorageKey: '',
       errorMessage: `Security violation: File type '${ext}' is an executable/script format and cannot be uploaded.`,
       detectedMimeType: 'application/x-executable',
-      categoryLimitBytes: CATEGORY_STORAGE_LIMITS[evidenceType],
+      categoryLimitBytes: CATEGORY_STORAGE_LIMITS[evidenceType] || CATEGORY_STORAGE_LIMITS.DISK_IMAGE,
     };
   }
 
@@ -133,7 +356,7 @@ export function validateEvidenceFile(
       sanitizedStorageKey: '',
       errorMessage: `Invalid file format '${ext}'. Permitted extensions: ${Array.from(ALLOWED_FORENSIC_EXTENSIONS).join(', ')}.`,
       detectedMimeType: 'application/octet-stream',
-      categoryLimitBytes: CATEGORY_STORAGE_LIMITS[evidenceType],
+      categoryLimitBytes: CATEGORY_STORAGE_LIMITS[evidenceType] || CATEGORY_STORAGE_LIMITS.DISK_IMAGE,
     };
   }
 
@@ -145,19 +368,52 @@ export function validateEvidenceFile(
       sanitizedFilename: sanitizePathSegment(cleanName),
       sanitizedStorageKey: '',
       errorMessage: `File size (${formatFileSize(sizeBytes)}) exceeds configured maximum limit of ${formatFileSize(limitBytes)} for category '${evidenceType}'.`,
-      detectedMimeType: 'application/octet-stream',
+      detectedMimeType: EXTENSION_MIME_MAP[ext] || 'application/octet-stream',
       categoryLimitBytes: limitBytes,
     };
   }
 
+  // Validate declared MIME consistency if provided
+  const mimeCheck = validateMimeConsistency(ext, declaredMimeType);
+  if (!mimeCheck.isValid) {
+    return {
+      isValid: false,
+      sanitizedFilename: sanitizePathSegment(cleanName),
+      sanitizedStorageKey: '',
+      errorMessage: mimeCheck.errorMessage,
+      detectedMimeType: declaredMimeType || 'application/octet-stream',
+      categoryLimitBytes: limitBytes,
+    };
+  }
+
+  // Validate magic headers / file signatures if file bytes are provided
+  if (fileBytes) {
+    const sigCheck = validateFileSignature(ext, fileBytes);
+    if (!sigCheck.isValid) {
+      return {
+        isValid: false,
+        sanitizedFilename: sanitizePathSegment(cleanName),
+        sanitizedStorageKey: '',
+        errorMessage: sigCheck.errorMessage,
+        detectedMimeType: EXTENSION_MIME_MAP[ext] || 'application/octet-stream',
+        categoryLimitBytes: limitBytes,
+      };
+    }
+  }
+
   const safeFilename = sanitizePathSegment(cleanName);
   const canonicalKey = `cases/pending/evidence/pending/v1/${safeFilename}`;
+  const canonicalMime =
+    EXTENSION_MIME_MAP[ext] ||
+    (declaredMimeType && declaredMimeType !== 'application/octet-stream'
+      ? declaredMimeType
+      : 'application/octet-stream');
 
   return {
     isValid: true,
     sanitizedFilename: safeFilename,
     sanitizedStorageKey: canonicalKey,
-    detectedMimeType: ext === '.pdf' ? 'application/pdf' : 'application/octet-stream',
+    detectedMimeType: canonicalMime,
     categoryLimitBytes: limitBytes,
   };
 }
@@ -276,11 +532,13 @@ export class SecureEvidenceStorageEngine {
     uploadedBy: string;
     expectedSha256?: string;
   }): MultipartUploadSession {
-    // Validate file type and size
+    // Validate file type, size, and declared content type
     const validation = validateEvidenceFile(
       params.originalFilename,
       params.totalSizeBytes,
-      params.evidenceType
+      params.evidenceType,
+      undefined,
+      params.contentType
     );
     if (!validation.isValid) {
       throw new Error(validation.errorMessage);
@@ -310,6 +568,7 @@ export class SecureEvidenceStorageEngine {
       originalFilename: params.originalFilename,
       contentType: params.contentType,
       totalSizeBytes: params.totalSizeBytes,
+      evidenceType: params.evidenceType,
       expectedSha256: params.expectedSha256,
       parts: [],
       status: 'INITIALIZED',
@@ -394,6 +653,18 @@ export class SecureEvidenceStorageEngine {
     }
     if (session.status === 'ABORTED') {
       throw new Error(`Cannot complete aborted upload session '${uploadId}'.`);
+    }
+    // Backend validation: Verify file signature & actual size of uploaded buffer
+    const backendValidation = validateEvidenceFile(
+      session.originalFilename,
+      combinedBuffer.length,
+      session.evidenceType || 'DISK_IMAGE',
+      combinedBuffer,
+      session.contentType
+    );
+    if (!backendValidation.isValid) {
+      this.abortMultipartUpload(uploadId);
+      throw new Error(`Backend Validation Failure: ${backendValidation.errorMessage}`);
     }
 
     // Verify computed SHA-256
