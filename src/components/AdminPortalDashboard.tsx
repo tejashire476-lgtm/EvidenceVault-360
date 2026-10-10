@@ -89,7 +89,13 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({
   // --------------------------------------------------------------------------
   // User Management State
   // --------------------------------------------------------------------------
-  const [usersList, setUsersList] = useState<User[]>([]);
+  const [usersList, setUsersList] = useState<User[]>(() => {
+    try {
+      return globalDb.getAllUsers(adminContext);
+    } catch {
+      return [];
+    }
+  });
   const [userSearch, setUserSearch] = useState('');
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newRoleSelect, setNewRoleSelect] = useState<UserRole>('POLICE_INVESTIGATOR');
@@ -116,7 +122,13 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({
     page: 1,
     pageSize: 15,
   });
-  const [auditResponse, setAuditResponse] = useState<AuditLogPaginatedResponse | null>(null);
+  const [auditResponse, setAuditResponse] = useState<AuditLogPaginatedResponse | null>(() => {
+    try {
+      return globalDb.queryAuditLogs(adminContext, { department: 'ALL', page: 1, pageSize: 15 });
+    } catch {
+      return null;
+    }
+  });
   const [selectedAuditForModal, setSelectedAuditForModal] = useState<AuditEvent | null>(null);
   const [isQueryingAudits, setIsQueryingAudits] = useState(false);
   const [auditQueryError, setAuditQueryError] = useState<string | null>(null);
@@ -192,13 +204,11 @@ export const AdminPortalDashboard: React.FC<AdminPortalDashboardProps> = ({
   // --------------------------------------------------------------------------
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
-  // Initial Data Fetch
+  // Initial Data Fetch (Asynchronous Telemetry)
   useEffect(() => {
-    loadUsers();
-    loadAuditLogs();
     loadSecurityData();
     loadHealthTelemetry();
-  }, [loadUsers, loadAuditLogs, loadSecurityData, loadHealthTelemetry]);
+  }, [loadSecurityData, loadHealthTelemetry]);
 
   // Subscribe to DB changes
   useEffect(() => {

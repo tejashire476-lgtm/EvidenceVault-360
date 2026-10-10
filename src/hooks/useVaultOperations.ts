@@ -766,9 +766,21 @@ export function useVaultOperations() {
     try {
       setVerifyingFileId(fileVersionId);
       const actorRole: UserRole =
-        activeDept === 'PROSECUTION' ? 'PUBLIC_PROSECUTOR' : 'FORENSIC_EXAMINER';
+        currentUser?.role ||
+        (activeDept === 'PROSECUTION' ? 'PUBLIC_PROSECUTOR' : 'FORENSIC_EXAMINER');
       const actorId =
-        activeDept === 'PROSECUTION' ? 'USR-PROSECUTOR-01' : 'USR-FORENSIC-01';
+        currentUser?.user_id ||
+        (activeDept === 'PROSECUTION' ? 'USR-PROSECUTOR-01' : 'USR-FORENSIC-01');
+
+      if (
+        actorRole !== 'FORENSIC_EXAMINER' &&
+        actorRole !== 'PUBLIC_PROSECUTOR' &&
+        actorRole !== 'SYSTEM_ADMIN'
+      ) {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to perform cryptographic evidence verification. Verification requires Forensic Examiner or Public Prosecutor clearance.`
+        );
+      }
 
       const res = await verifyEvidenceFileVersionIntegrity({
         fileVersionId,
@@ -799,12 +811,21 @@ export function useVaultOperations() {
   const handleSimulateTamper = async (fv: EvidenceFileVersion) => {
     try {
       setVerifyingFileId(fv.id);
+      const actorRole: UserRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
+
+      if (actorRole !== 'FORENSIC_EXAMINER' && actorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to inject storage tamper. Action restricted to Forensic Examiner role.`
+        );
+      }
+
       globalStorageEngine.tamperObject(fv.generated_storage_key, 0);
 
-      await verifyEvidenceFileVersionIntegrity({
+      const res = await verifyEvidenceFileVersionIntegrity({
         fileVersionId: fv.id,
-        actorId: 'USR-FORENSIC-01',
-        actorRole: 'FORENSIC_EXAMINER',
+        actorId,
+        actorRole,
         database: globalDb,
         storageEngine: globalStorageEngine,
         useStreaming: true,
@@ -812,7 +833,7 @@ export function useVaultOperations() {
 
       setVerifyingFileId(null);
       setVerificationFeedback({
-        text: `⚠ Tamper Injected! Byte 0 was inverted in private object storage. Verification detected MISMATCH immediately.`,
+        text: `⚠ Tamper Injected! Byte 0 was inverted in private object storage. Verification detected MISMATCH immediately (${res.observed_sha256.slice(0, 16)}...).`,
         result: 'MISMATCH',
       });
       setTimeout(() => setVerificationFeedback(null), 7000);
@@ -825,23 +846,64 @@ export function useVaultOperations() {
   const handleRestorePristine = async (fv: EvidenceFileVersion) => {
     try {
       setVerifyingFileId(fv.id);
-      const pristine = new TextEncoder().encode('test');
-      globalStorageEngine.restoreObject(fv.generated_storage_key, pristine);
+      const actorRole: UserRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
 
-      await verifyEvidenceFileVersionIntegrity({
+      if (actorRole !== 'FORENSIC_EXAMINER' && actorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to perform controlled evidence restoration. Action restricted to Forensic Examiner role.`
+        );
+      }
+
+      if (!globalStorageEngine.hasPristineSnapshot(fv.generated_storage_key)) {
+        throw new Error(
+          `Controlled Recovery Aborted: No pristine baseline snapshot found for storage key '${fv.generated_storage_key}'. Authentic bytes cannot be fabricated.`
+        );
+      }
+
+      // Restore authentic original bytes from private baseline storage
+      globalStorageEngine.restorePristine(fv.generated_storage_key);
+
+      // Perform genuine cryptographic re-verification
+      const res = await verifyEvidenceFileVersionIntegrity({
         fileVersionId: fv.id,
-        actorId: 'USR-FORENSIC-01',
-        actorRole: 'FORENSIC_EXAMINER',
+        actorId,
+        actorRole,
         database: globalDb,
         storageEngine: globalStorageEngine,
         useStreaming: true,
       });
 
-      setVerifyingFileId(null);
-      setVerificationFeedback({
-        text: `✔ Original binary object restored. Re-verification confirmed intact MATCH.`,
-        result: 'MATCH',
+      // Record authoritative recovery event in tamper-evident blockchain audit ledger
+      await globalDb.recordAuditEvent({
+        actor_id: actorId,
+        actor_role: actorRole,
+        department: currentUser?.department || 'FORENSIC',
+        action: 'EVIDENCE_RESTORED_TO_PRISTINE',
+        entity_type: 'EvidenceFileVersion',
+        entity_id: fv.id,
+        status: res.result === 'MATCH' ? 'SUCCESS' : 'FAILURE',
+        payload: {
+          storage_key: fv.generated_storage_key,
+          baseline_sha256: fv.sha256_hash,
+          observed_sha256: res.observed_sha256,
+          verification_result: res.result,
+          recovery_type: 'WORM_PRISTINE_RECOVERY',
+        },
       });
+
+      setVerifyingFileId(null);
+      if (res.result === 'MATCH') {
+        setVerificationFeedback({
+          text: `✔ Controlled Recovery Success: Authentic original evidence bytes restored from private baseline vault. Re-verification confirmed intact MATCH (${res.duration_ms} ms).`,
+          result: 'MATCH',
+        });
+      } else {
+        setVerificationFeedback({
+          text: `⚠ Recovery Warning: Restored bytes produced checksum '${res.observed_sha256.slice(0, 12)}...', which does not match baseline manifest.`,
+          result: 'MISMATCH',
+        });
+      }
       setTimeout(() => setVerificationFeedback(null), 7000);
     } catch (err: unknown) {
       setVerifyingFileId(null);
@@ -920,7 +982,15 @@ export function useVaultOperations() {
         return;
       }
 
-      await globalDb.transitionHandoffStatus(handoffId, 'RECEIVED', currentUser?.user_id || 'USR-FORENSIC-01');
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
+      const actorRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      if (actorRole !== 'FORENSIC_EXAMINER' && actorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to accept forensic custody. Forensic Examiner clearance is required.`
+        );
+      }
+
+      await globalDb.transitionHandoffStatus(handoffId, 'RECEIVED', actorId);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : String(err));
     }
@@ -929,12 +999,25 @@ export function useVaultOperations() {
   const handleConfirmReject = async () => {
     if (!rejectModalData) return;
     try {
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
+      const actorRole = currentUser?.role || 'FORENSIC_EXAMINER';
+
+      if (
+        actorRole !== 'FORENSIC_EXAMINER' &&
+        actorRole !== 'POLICE_INVESTIGATOR' &&
+        actorRole !== 'SYSTEM_ADMIN'
+      ) {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to return or reject handoff.`
+        );
+      }
+
       if (networkStatus === 'OFFLINE') {
         const liveHandoff = handoffs.find((h) => h.id === rejectModalData.handoffId);
         OfflineQueueManager.enqueueAction({
           action: 'TRANSITION_HANDOFF',
-          actorId: currentUser?.user_id || 'USR-FORENSIC-01',
-          actorRole: currentUser?.role || 'FORENSIC_EXAMINER',
+          actorId,
+          actorRole,
           actorDepartment: 'FORENSIC',
           baseVersion: liveHandoff?.status || 'SUBMITTED',
           payload: {
@@ -954,7 +1037,7 @@ export function useVaultOperations() {
       await globalDb.transitionHandoffStatus(
         rejectModalData.handoffId,
         'RETURNED',
-        currentUser?.user_id || 'USR-FORENSIC-01',
+        actorId,
         rejectReason.trim() || 'Evidence returned to submitting officer'
       );
       setRejectModalData(null);
@@ -966,7 +1049,15 @@ export function useVaultOperations() {
 
   const handleStartExam = async (handoffId: string) => {
     try {
-      await globalDb.transitionHandoffStatus(handoffId, 'UNDER_EXAMINATION', 'USR-FORENSIC-01');
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
+      const actorRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      if (actorRole !== 'FORENSIC_EXAMINER' && actorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to start forensic examination. Forensic Examiner clearance is required.`
+        );
+      }
+
+      await globalDb.transitionHandoffStatus(handoffId, 'UNDER_EXAMINATION', actorId);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : String(err));
     }
@@ -974,7 +1065,15 @@ export function useVaultOperations() {
 
   const handleMarkReportReady = async (handoffId: string) => {
     try {
-      await globalDb.transitionHandoffStatus(handoffId, 'REPORT_READY', 'USR-FORENSIC-01');
+      const actorId = currentUser?.user_id || 'USR-FORENSIC-01';
+      const actorRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      if (actorRole !== 'FORENSIC_EXAMINER' && actorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${actorRole}' is not permitted to finalize examination. Forensic Examiner clearance is required.`
+        );
+      }
+
+      await globalDb.transitionHandoffStatus(handoffId, 'REPORT_READY', actorId);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : String(err));
     }
@@ -984,11 +1083,19 @@ export function useVaultOperations() {
     const selectedCase = cases.find((c) => c.id === selectedCaseId) || cases[0];
     if (!newFindingText.trim() || !selectedCase) return;
     try {
+      const authorId = currentUser?.user_id || 'USR-FORENSIC-01';
+      const authorRole = currentUser?.role || 'FORENSIC_EXAMINER';
+      if (authorRole !== 'FORENSIC_EXAMINER' && authorRole !== 'SYSTEM_ADMIN') {
+        throw new Error(
+          `Authorization Failure: Role '${authorRole}' is not permitted to author forensic reports. Forensic Examiner clearance is required.`
+        );
+      }
+
       await globalDb.createOrReviseReport({
         case_id: selectedCase.id,
         evidence_id: evdId,
         report_content: newFindingText.trim(),
-        author_id: 'USR-FORENSIC-01',
+        author_id: authorId,
         status: 'FINALIZED',
       });
       setNewFindingText('');

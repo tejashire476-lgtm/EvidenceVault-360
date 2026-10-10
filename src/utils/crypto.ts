@@ -34,9 +34,16 @@ export async function computeSha256(
 
   // Use Web Crypto API if available (in browsers and modern Node.js)
   if (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) {
+    const bufferSource =
+      dataBuffer.byteOffset === 0 && dataBuffer.byteLength === dataBuffer.buffer.byteLength
+        ? dataBuffer.buffer
+        : dataBuffer.buffer.slice(
+            dataBuffer.byteOffset,
+            dataBuffer.byteOffset + dataBuffer.byteLength
+          );
     const hashBuffer = await globalThis.crypto.subtle.digest(
       'SHA-256',
-      dataBuffer.buffer as ArrayBuffer
+      bufferSource as ArrayBuffer
     );
     return bufferToHex(hashBuffer);
   }

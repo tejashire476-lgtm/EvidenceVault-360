@@ -99,6 +99,10 @@ export default function App() {
         verificationFeedback={v.verificationFeedback}
         activeDept={v.activeDept}
         setActiveDept={v.setActiveDept}
+        onSwitchUser={(session) => {
+          v.setCurrentUser(session);
+          v.setActiveDept(session.department);
+        }}
       />
 
       <EvidenceWorkspace
@@ -140,6 +144,10 @@ export default function App() {
           v.setActiveDept('ADMINISTRATION');
         }}
         onReturnToDept={(dept) => v.setActiveDept(dept)}
+        onSwitchUser={(session) => {
+          v.setCurrentUser(session);
+          v.setActiveDept(session.department);
+        }}
       />
 
       {/* Modals */}

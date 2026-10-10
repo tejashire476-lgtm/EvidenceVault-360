@@ -58,6 +58,7 @@ import {
   AuditReviewScheduler,
   sanitizeCsvField,
 } from '../../utils/auditReview.ts';
+import { DEPARTMENT_PRESETS } from '../../types.ts';
 
 test('1. A case can be created with a unique ID and retrieved', async () => {
   const db = new EvidenceVaultDatabase();
@@ -3216,6 +3217,346 @@ test('72. Synthetic payload helper: Generates authentic headers for all supporte
 
   const pdfPayload = generateSyntheticForensicPayload('test_report.pdf');
   assert.equal(validateFileSignature('.pdf', pdfPayload).isValid, true);
+});
+
+test('73. Authorization enforcement: POLICE_INVESTIGATOR is strictly denied TRANSITION_FORENSIC_STATUS', async () => {
+  const db = new EvidenceVaultDatabase();
+  const policeUser: User = {
+    id: 'USR-POLICE-AUTH-01',
+    display_name: 'Detective Sharma',
+    role: 'POLICE_INVESTIGATOR',
+    active_status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  };
+  db.addUser(policeUser);
+
+  await db.createCase({
+    id: 'CASE-AUTH-01',
+    case_reference: 'CASE-REF-AUTH-01',
+    title: 'Authorization Enforcement Test Case',
+    category: 'Cyber Financial Crime',
+    created_by: policeUser.id,
+  });
+
+  const evd = await db.createEvidence({
+    id: 'EVD-AUTH-01',
+    case_id: 'CASE-AUTH-01',
+    description: 'Mobile device artifact',
+    evidence_type: 'MOBILE_EXTRACTION',
+    source_description: 'Suspect premises',
+    collected_by: policeUser.id,
+    collected_at: new Date().toISOString(),
+    current_status: 'SUBMITTED_TO_FORENSICS',
+    created_by: policeUser.id,
+  });
+
+  const handoff = await db.createHandoff({
+    id: 'HND-AUTH-01',
+    evidence_id: evd.id,
+    source_department: 'POLICE',
+    destination_department: 'FORENSIC',
+    submitted_by: policeUser.id,
+    received_by: null,
+    status: 'SUBMITTED',
+    submitted_at: new Date().toISOString(),
+    acknowledged_at: null,
+    rejection_reason: null,
+  });
+
+  // 1. Police attempting RECEIVED must throw AuthorizationError
+  await assert.rejects(
+    async () => {
+      await db.transitionHandoffStatus(handoff.id, 'RECEIVED', policeUser.id);
+    },
+    (err: unknown) => {
+      assert.ok(err instanceof AuthorizationError);
+      assert.match(
+        (err as Error).message,
+        /Authorization denied: Role 'POLICE_INVESTIGATOR' is not permitted to perform 'TRANSITION_FORENSIC_STATUS'/
+      );
+      return true;
+    }
+  );
+
+  // 2. Police attempting UNDER_EXAMINATION must also fail
+  await assert.rejects(
+    async () => {
+      await db.transitionHandoffStatus(handoff.id, 'UNDER_EXAMINATION', policeUser.id);
+    },
+    (err: unknown) => {
+      assert.ok(err instanceof AuthorizationError);
+      assert.match(
+        (err as Error).message,
+        /Authorization denied: Role 'POLICE_INVESTIGATOR' is not permitted to perform 'TRANSITION_FORENSIC_STATUS'/
+      );
+      return true;
+    }
+  );
+
+  // 3. Police attempting REPORT_READY must also fail
+  await assert.rejects(
+    async () => {
+      await db.transitionHandoffStatus(handoff.id, 'REPORT_READY', policeUser.id);
+    },
+    (err: unknown) => {
+      assert.ok(err instanceof AuthorizationError);
+      assert.match(
+        (err as Error).message,
+        /Authorization denied: Role 'POLICE_INVESTIGATOR' is not permitted to perform 'TRANSITION_FORENSIC_STATUS'/
+      );
+      return true;
+    }
+  );
+});
+
+test('74. Authorization enforcement: FORENSIC_EXAMINER is permitted to execute forensic workflow transitions', async () => {
+  const db = new EvidenceVaultDatabase();
+  const policeUser: User = {
+    id: 'USR-POLICE-74',
+    display_name: 'Officer Rao',
+    role: 'POLICE_INVESTIGATOR',
+    active_status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  };
+  const forensicUser: User = {
+    id: 'USR-FORENSIC-74',
+    display_name: 'Analyst Lin',
+    role: 'FORENSIC_EXAMINER',
+    active_status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  };
+  db.addUser(policeUser);
+  db.addUser(forensicUser);
+
+  await db.createCase({
+    id: 'CASE-74',
+    case_reference: 'CASE-REF-74',
+    title: 'Forensic Flow Test Case',
+    category: 'Cyber Financial Crime',
+    created_by: policeUser.id,
+  });
+
+  const evd = await db.createEvidence({
+    id: 'EVD-74',
+    case_id: 'CASE-74',
+    description: 'Digital evidence drive',
+    evidence_type: 'DISK_IMAGE',
+    source_description: 'Lab seizure',
+    collected_by: policeUser.id,
+    collected_at: new Date().toISOString(),
+    current_status: 'SUBMITTED_TO_FORENSICS',
+    created_by: policeUser.id,
+  });
+
+  const handoff = await db.createHandoff({
+    id: 'HND-74',
+    evidence_id: evd.id,
+    source_department: 'POLICE',
+    destination_department: 'FORENSIC',
+    submitted_by: policeUser.id,
+    received_by: null,
+    status: 'SUBMITTED',
+    submitted_at: new Date().toISOString(),
+    acknowledged_at: null,
+    rejection_reason: null,
+  });
+
+  // Forensics can accept custody (RECEIVED)
+  const received = await db.transitionHandoffStatus(handoff.id, 'RECEIVED', forensicUser.id);
+  assert.equal(received.status, 'RECEIVED');
+  assert.equal(received.received_by, forensicUser.id);
+
+  // Forensics can start examination (UNDER_EXAMINATION)
+  const examining = await db.transitionHandoffStatus(handoff.id, 'UNDER_EXAMINATION', forensicUser.id);
+  assert.equal(examining.status, 'UNDER_EXAMINATION');
+
+  // Forensics can finalize examination (REPORT_READY)
+  const ready = await db.transitionHandoffStatus(handoff.id, 'REPORT_READY', forensicUser.id);
+  assert.equal(ready.status, 'REPORT_READY');
+});
+
+test('75. Controlled Restore Pristine: Restores authentic baseline bytes and re-verifies MATCH without fabrication', async () => {
+  const db = new EvidenceVaultDatabase();
+  const storage = new SecureEvidenceStorageEngine();
+
+  const policeUser: User = {
+    id: 'USR-POLICE-75',
+    display_name: 'Inspector Sen',
+    role: 'POLICE_INVESTIGATOR',
+    active_status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  };
+  const forensicUser: User = {
+    id: 'USR-FORENSIC-75',
+    display_name: 'Dr. Jane Forensic',
+    role: 'FORENSIC_EXAMINER',
+    active_status: 'ACTIVE',
+    created_at: new Date().toISOString(),
+  };
+  db.addUser(policeUser);
+  db.addUser(forensicUser);
+
+  await db.createCase({
+    id: 'CASE-75',
+    case_reference: 'CASE-REF-75',
+    title: 'Controlled Recovery Test Case',
+    category: 'Cyber Financial Crime',
+    created_by: policeUser.id,
+  });
+
+  const evd = await db.createEvidence({
+    id: 'EVD-75',
+    case_id: 'CASE-75',
+    description: 'Hard drive raw dump',
+    evidence_type: 'DISK_IMAGE',
+    source_description: 'Evidence Locker 4',
+    collected_by: policeUser.id,
+    collected_at: new Date().toISOString(),
+    current_status: 'IN_FORENSIC_CUSTODY',
+    created_by: policeUser.id,
+  });
+
+  // Seed authentic baseline object
+  const originalBytes = new TextEncoder().encode('AUTHENTIC_ORIGINAL_FORENSIC_BYTES_9876543210');
+  const originalHash = await computeSha256(originalBytes);
+  const storageKey = 'cases/CASE-75/evidence/EVD-75/v1/disk.raw';
+
+  storage.seedObject(storageKey, originalBytes, 'application/octet-stream');
+  assert.equal(storage.hasPristineSnapshot(storageKey), true, 'Pristine snapshot must be automatically preserved');
+
+  const fileVersion = await db.addFileVersion({
+    id: 'FILE-75-v1',
+    evidence_id: evd.id,
+    original_filename: 'disk.raw',
+    generated_storage_key: storageKey,
+    content_type: 'application/octet-stream',
+    file_size: originalBytes.length,
+    sha256_hash: originalHash,
+    baseline_created_at: new Date().toISOString(),
+    uploaded_by: forensicUser.id,
+  });
+
+  // Step 1: Initial verification -> MATCH
+  const v1 = await verifyEvidenceFileVersionIntegrity({
+    fileVersionId: fileVersion.id,
+    actorId: forensicUser.id,
+    actorRole: 'FORENSIC_EXAMINER',
+    database: db,
+    storageEngine: storage,
+  });
+  assert.equal(v1.result, 'MATCH');
+  assert.equal(v1.observed_sha256, originalHash);
+
+  // Step 2: Inject simulated storage tamper
+  const tamperInfo = storage.tamperObject(storageKey, 3);
+  assert.notEqual(tamperInfo.originalByte, tamperInfo.tamperedByte);
+
+  const v2 = await verifyEvidenceFileVersionIntegrity({
+    fileVersionId: fileVersion.id,
+    actorId: forensicUser.id,
+    actorRole: 'FORENSIC_EXAMINER',
+    database: db,
+    storageEngine: storage,
+  });
+  assert.equal(v2.result, 'MISMATCH', 'Tampered storage must yield MISMATCH');
+  assert.notEqual(v2.observed_sha256, originalHash);
+
+  // Step 3: Execute controlled pristine restoration
+  const restored = storage.restorePristine(storageKey);
+  assert.equal(restored.byteLength, originalBytes.length);
+  assert.deepEqual(Array.from(restored.restoredBytes), Array.from(originalBytes));
+
+  // Step 4: Re-verification confirms MATCH
+  const v3 = await verifyEvidenceFileVersionIntegrity({
+    fileVersionId: fileVersion.id,
+    actorId: forensicUser.id,
+    actorRole: 'FORENSIC_EXAMINER',
+    database: db,
+    storageEngine: storage,
+  });
+  assert.equal(v3.result, 'MATCH', 'Restored storage must re-verify to MATCH');
+  assert.equal(v3.observed_sha256, originalHash);
+
+  // Step 5: Verify that audit history preserves all 3 verification records
+  const history = db.getVerificationResultsForFileVersion(fileVersion.id);
+  assert.equal(history.length, 3, 'All 3 verification attempts must be preserved');
+  assert.equal(history[0].id, v3.id, 'Latest result is MATCH');
+  assert.equal(history[1].id, v2.id, 'Second result is MISMATCH');
+  assert.equal(history[2].id, v1.id, 'First result is MATCH');
+
+  // Baseline manifest hash must NOT be modified
+  const storedVersion = db.getFileVersion(fileVersion.id);
+  assert.equal(storedVersion?.sha256_hash, originalHash);
+});
+
+test('76. Controlled Restore Pristine on real PNG evidence: Preserves genuine PNG bytes without hardcoded strings', async () => {
+  const storage = new SecureEvidenceStorageEngine();
+
+  const pngBytes = generateSyntheticForensicPayload('crime_scene.png');
+  const expectedPngHash = await computeSha256(pngBytes);
+
+  const session = storage.initiateMultipartUpload({
+    caseId: 'CASE-PNG-01',
+    evidenceId: 'EVD-PNG-01',
+    versionId: 'v1',
+    originalFilename: 'crime_scene.png',
+    contentType: 'image/png',
+    totalSizeBytes: pngBytes.length,
+    evidenceType: 'MEDIA',
+    uploadedBy: 'USR-POLICE-01',
+    expectedSha256: expectedPngHash,
+  });
+
+  await storage.uploadPart(session.uploadId, 1, pngBytes);
+  const completed = await storage.completeMultipartUpload(session.uploadId, pngBytes);
+
+  // Tamper with byte in PNG
+  storage.tamperObject(completed.storageKey, 10);
+
+  // Controlled restoration without passing explicit data
+  const restoreResult = storage.restorePristine(completed.storageKey);
+  assert.equal(restoreResult.byteLength, pngBytes.length);
+
+  // Verify the restored bytes are authentic PNG bytes matching expectedPngHash
+  const restoredHash = await computeSha256(restoreResult.restoredBytes);
+  assert.equal(restoredHash, expectedPngHash, 'Restored PNG hash must match exact original PNG hash');
+  assert.equal(validateFileSignature('.png', restoreResult.restoredBytes).isValid, true);
+});
+
+test('77. Non-existent snapshot error: restorePristine refuses to fabricate data if no snapshot exists', () => {
+  const storage = new SecureEvidenceStorageEngine();
+  assert.throws(
+    () => {
+      storage.restorePristine('cases/NONEXISTENT/test.bin');
+    },
+    /Object not found at key/
+  );
+});
+
+test('78. Portal Separation: Presets enforce strict departmental role segregation without credential leakage', () => {
+  // 1. Police Preset must strictly have POLICE_INVESTIGATOR role and POLICE department
+  const policePreset = DEPARTMENT_PRESETS.POLICE;
+  assert.equal(policePreset.department, 'POLICE');
+  assert.equal(policePreset.role, 'POLICE_INVESTIGATOR');
+  assert.equal(policePreset.user_id, 'USR-POLICE-01');
+
+  // 2. Forensic Preset must strictly have FORENSIC_EXAMINER role and FORENSIC department
+  const forensicPreset = DEPARTMENT_PRESETS.FORENSIC;
+  assert.equal(forensicPreset.department, 'FORENSIC');
+  assert.equal(forensicPreset.role, 'FORENSIC_EXAMINER');
+  assert.equal(forensicPreset.user_id, 'USR-FORENSIC-01');
+
+  // 3. Prosecution Preset must strictly have PUBLIC_PROSECUTOR role and PROSECUTION department
+  const prosecutionPreset = DEPARTMENT_PRESETS.PROSECUTION;
+  assert.equal(prosecutionPreset.department, 'PROSECUTION');
+  assert.equal(prosecutionPreset.role, 'PUBLIC_PROSECUTOR');
+  assert.equal(prosecutionPreset.user_id, 'USR-PROSECUTOR-01');
+
+  // Ensure all 3 departments have distinct identities, tokens, and badges
+  const badges = [policePreset.badge, forensicPreset.badge, prosecutionPreset.badge];
+  assert.equal(new Set(badges).size, 3, 'Each department portal must use unique credentials');
+  const userIds = [policePreset.user_id, forensicPreset.user_id, prosecutionPreset.user_id];
+  assert.equal(new Set(userIds).size, 3, 'Each department portal must have distinct actor user_ids');
 });
 
 

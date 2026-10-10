@@ -5,6 +5,7 @@ import type {
   NetworkSyncStatus,
   OfflineQueueItem,
 } from '../types.ts';
+import { DEPARTMENT_PRESETS } from '../types.ts';
 import {
   ShieldCheckIcon,
   ShieldAlertIcon,
@@ -33,6 +34,7 @@ export interface WorkspaceHeaderProps {
   } | null;
   activeDept: Department | 'AUDIT' | 'STORAGE';
   setActiveDept: (dept: Department | 'AUDIT' | 'STORAGE') => void;
+  onSwitchUser?: (session: AuthenticatedSession) => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -50,6 +52,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   verificationFeedback,
   activeDept,
   setActiveDept,
+  onSwitchUser,
 }) => {
   const pendingCount = offlineQueue.filter(
     (q) => q.status === 'PENDING' || q.status === 'CONFLICT'
@@ -59,9 +62,12 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
     <>
       {/* Logged-In Department Ingress Bar */}
       <div className="ev-auth-ingress-bar">
-        <div className="ev-auth-user-pill">
+        <div className="ev-auth-user-pill" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span className={`ev-auth-role-tag ${currentUser.department.toLowerCase()}`}>
-            {currentUser.department} WORKSPACE
+            {currentUser.department} PORTAL
+          </span>
+          <span style={{ fontSize: '12px', color: '#cbd5e1' }}>
+            {currentUser.name} (<strong>{currentUser.role}</strong>)
           </span>
         </div>
 
@@ -282,33 +288,90 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
         </div>
       )}
 
-      {/* Department Tabs */}
-      <nav className="ev-department-nav" aria-label="Department Workspaces">
-        <button
-          type="button"
-          className={`ev-dept-tab ${activeDept === 'POLICE' ? 'active-police' : ''}`}
-          onClick={() => setActiveDept('POLICE')}
-        >
-          <FolderLockIcon size={18} />
-          1. Police Department (Case &amp; Evidence Ingestion)
-        </button>
-        <button
-          type="button"
-          className={`ev-dept-tab ${activeDept === 'FORENSIC' ? 'active-forensic' : ''}`}
-          onClick={() => setActiveDept('FORENSIC')}
-        >
-          <FileCodeIcon size={18} />
-          2. Forensic Department (Handoffs &amp; Examination)
-        </button>
-        <button
-          type="button"
-          className={`ev-dept-tab ${activeDept === 'PROSECUTION' ? 'active-prosecution' : ''}`}
-          onClick={() => setActiveDept('PROSECUTION')}
-        >
-          <ShieldCheckIcon size={18} />
-          3. Prosecution Department (Judicial Review &amp; Index)
-        </button>
-      </nav>
+      {/* Dedicated Isolated Department Portal Banner */}
+      <div className={`ev-portal-banner portal-${activeDept.toLowerCase()}`}>
+        <div className="ev-portal-info">
+          <div className="ev-portal-icon-box">
+            {activeDept === 'POLICE' && <FolderLockIcon size={22} />}
+            {activeDept === 'FORENSIC' && <FileCodeIcon size={22} />}
+            {activeDept === 'PROSECUTION' && <ShieldCheckIcon size={22} />}
+            {activeDept === 'STORAGE' && <DatabaseIcon size={22} />}
+          </div>
+          <div className="ev-portal-text">
+            <h2>
+              {activeDept === 'POLICE' && 'Police Investigation Portal'}
+              {activeDept === 'FORENSIC' && 'Forensic Laboratory & Verification System'}
+              {activeDept === 'PROSECUTION' && 'Prosecution & Judicial Review Portal'}
+              {activeDept === 'STORAGE' && 'Object Storage Telemetry & Cost Console'}
+              <span className="ev-portal-badge-active">
+                {activeDept === 'POLICE' && 'Police Custody Active'}
+                {activeDept === 'FORENSIC' && 'Forensic Verification Active'}
+                {activeDept === 'PROSECUTION' && 'Judicial Review Active'}
+                {activeDept === 'STORAGE' && 'Storage Metrics Active'}
+              </span>
+            </h2>
+            <p>
+              {activeDept === 'POLICE' &&
+                'First responder case intake, digital evidence ingestion and custodial transfer dispatch.'}
+              {activeDept === 'FORENSIC' &&
+                'Independent forensic custody, bit-stream SHA-256 verification, tamper detection and laboratory reports.'}
+              {activeDept === 'PROSECUTION' &&
+                'Court-admissible evidentiary audit, Section 65B electronic certificates and judicial trial sign-off.'}
+              {activeDept === 'STORAGE' &&
+                'Cloudflare R2 zero-egress object storage metrics, quota monitoring, and cost benchmarks.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="ev-portal-switch-group">
+          <span className="ev-portal-switch-label">Choose Portal:</span>
+          <button
+            type="button"
+            className={`ev-portal-choice-btn ${activeDept === 'POLICE' ? 'active-choice-police' : ''}`}
+            onClick={() => {
+              if (onSwitchUser) {
+                onSwitchUser(DEPARTMENT_PRESETS.POLICE);
+              } else {
+                setActiveDept('POLICE');
+              }
+            }}
+            title="Switch to Police Department Portal"
+          >
+            <FolderLockIcon size={14} />
+            Police Portal
+          </button>
+          <button
+            type="button"
+            className={`ev-portal-choice-btn ${activeDept === 'FORENSIC' ? 'active-choice-forensic' : ''}`}
+            onClick={() => {
+              if (onSwitchUser) {
+                onSwitchUser(DEPARTMENT_PRESETS.FORENSIC);
+              } else {
+                setActiveDept('FORENSIC');
+              }
+            }}
+            title="Switch to Forensic Laboratory & Verification System"
+          >
+            <FileCodeIcon size={14} />
+            Forensic Portal
+          </button>
+          <button
+            type="button"
+            className={`ev-portal-choice-btn ${activeDept === 'PROSECUTION' ? 'active-choice-prosecution' : ''}`}
+            onClick={() => {
+              if (onSwitchUser) {
+                onSwitchUser(DEPARTMENT_PRESETS.PROSECUTION);
+              } else {
+                setActiveDept('PROSECUTION');
+              }
+            }}
+            title="Switch to Prosecution & Judicial Review Portal"
+          >
+            <ShieldCheckIcon size={14} />
+            Prosecution Portal
+          </button>
+        </div>
+      </div>
     </>
   );
 };

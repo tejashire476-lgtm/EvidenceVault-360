@@ -499,6 +499,7 @@ export async function verifySignedUrl(
 // ----------------------------------------------------------------------------
 export class SecureEvidenceStorageEngine {
   private objectStore: Map<string, { data: Uint8Array; contentType: string }> = new Map();
+  private pristineStore: Map<string, { data: Uint8Array; contentType: string; sha256?: string }> = new Map();
   private uploadSessions: Map<string, MultipartUploadSession> = new Map();
   private classAOperations = 0;
   private classBOperations = 0;
@@ -512,6 +513,7 @@ export class SecureEvidenceStorageEngine {
 
   public reset(): void {
     this.objectStore.clear();
+    this.pristineStore.clear();
     this.uploadSessions.clear();
     this.classAOperations = 0;
     this.classBOperations = 0;
@@ -677,9 +679,16 @@ export class SecureEvidenceStorageEngine {
     }
 
     // Store binary object in private object store (outside database rows)
+    const storedBuffer = new Uint8Array(combinedBuffer);
     this.objectStore.set(session.storageKey, {
-      data: new Uint8Array(combinedBuffer),
+      data: storedBuffer,
       contentType: session.contentType,
+    });
+    // Preserve authoritative pristine backup in baseline WORM storage for controlled recovery
+    this.pristineStore.set(session.storageKey, {
+      data: new Uint8Array(storedBuffer),
+      contentType: session.contentType,
+      sha256: observedSha256,
     });
 
     session.status = 'COMPLETED';
@@ -765,6 +774,13 @@ export class SecureEvidenceStorageEngine {
     if (data.length === 0) {
       throw new Error('Cannot tamper empty object.');
     }
+    // Ensure authoritative pristine snapshot is preserved prior to alteration
+    if (!this.pristineStore.has(storageKey)) {
+      this.pristineStore.set(storageKey, {
+        data: new Uint8Array(data),
+        contentType: record.contentType,
+      });
+    }
     const index = Math.min(byteIndex, data.length - 1);
     const originalByte = data[index];
     const tamperedByte = originalByte ^ 0xff; // Invert byte bits
@@ -774,13 +790,44 @@ export class SecureEvidenceStorageEngine {
 
   /**
    * Restores pristine data back to a stored object after tamper demonstration.
+   * If pristineData is omitted, restores from the authoritative pristine snapshot store.
    */
-  public restoreObject(storageKey: string, pristineData: Uint8Array): void {
+  public restoreObject(storageKey: string, pristineData?: Uint8Array): Uint8Array {
     const record = this.objectStore.get(storageKey);
     if (!record) {
       throw new Error(`Object not found at key '${storageKey}'.`);
     }
-    record.data = new Uint8Array(pristineData);
+    if (pristineData) {
+      record.data = new Uint8Array(pristineData);
+      this.pristineStore.set(storageKey, {
+        data: new Uint8Array(pristineData),
+        contentType: record.contentType,
+      });
+      return record.data;
+    }
+    const pristineSnapshot = this.pristineStore.get(storageKey);
+    if (!pristineSnapshot) {
+      throw new Error(
+        `Controlled Restoration Failure: No pristine baseline snapshot found for storage key '${storageKey}'. Cannot fabricate restoration.`
+      );
+    }
+    record.data = new Uint8Array(pristineSnapshot.data);
+    return record.data;
+  }
+
+  /**
+   * Controlled restoration of authentic original bytes from private baseline storage.
+   */
+  public restorePristine(storageKey: string): { restoredBytes: Uint8Array; byteLength: number } {
+    const restored = this.restoreObject(storageKey);
+    return { restoredBytes: restored, byteLength: restored.length };
+  }
+
+  /**
+   * Returns true if an authentic pristine baseline snapshot exists for this storage key.
+   */
+  public hasPristineSnapshot(storageKey: string): boolean {
+    return this.pristineStore.has(storageKey);
   }
 
   /**
@@ -803,7 +850,9 @@ export class SecureEvidenceStorageEngine {
     data: Uint8Array,
     contentType = 'application/octet-stream'
   ): void {
-    this.objectStore.set(storageKey, { data: new Uint8Array(data), contentType });
+    const clone = new Uint8Array(data);
+    this.objectStore.set(storageKey, { data: clone, contentType });
+    this.pristineStore.set(storageKey, { data: new Uint8Array(clone), contentType });
     this.totalStoredBytes += data.length;
   }
 

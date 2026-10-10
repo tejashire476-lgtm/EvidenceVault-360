@@ -10,6 +10,7 @@ import type {
   OfflineQueueItem,
   AuthenticatedSession,
 } from '../types.ts';
+import { DEPARTMENT_PRESETS } from '../types.ts';
 import { globalDb } from '../data/db.ts';
 import { globalStorageEngine } from '../utils/storage.ts';
 import { formatFileSize } from '../utils/crypto.ts';
@@ -62,6 +63,7 @@ export interface EvidenceWorkspaceProps {
   ) => void;
   onSwitchToAdmin: () => void;
   onReturnToDept: (dept: Department) => void;
+  onSwitchUser?: (session: AuthenticatedSession) => void;
 }
 
 export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
@@ -100,7 +102,12 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   onProsecutionDecision,
   onSwitchToAdmin,
   onReturnToDept,
+  onSwitchUser,
 }) => {
+  const isForensicRole = currentUser.role === 'FORENSIC_EXAMINER' || currentUser.role === 'SYSTEM_ADMIN';
+  const isProsecutionRole = currentUser.role === 'PUBLIC_PROSECUTOR' || currentUser.role === 'SYSTEM_ADMIN';
+  const canVerifyIntegrity = isForensicRole || isProsecutionRole;
+  const canTamperOrRestore = isForensicRole;
   const selectedCase: Case | undefined = cases.find((c) => c.id === selectedCaseId) || cases[0];
   const caseEvidence: EvidenceRecord[] = selectedCase
     ? evidence.filter((e) => e.case_id === selectedCase.id)
@@ -235,9 +242,16 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
           <section className="ev-card">
             <div className="ev-card-header">
               <div>
-                <h3 className="ev-card-title">Shared Case Register (Single Source of Truth)</h3>
+                <h3 className="ev-card-title">
+                  {activeDept === 'POLICE' && 'Police Incident & Case Register'}
+                  {activeDept === 'FORENSIC' && 'Forensic Intake & Active Laboratory Queue'}
+                  {activeDept === 'PROSECUTION' && 'Prosecution Judicial Case Docket'}
+                  {activeDept !== 'POLICE' && activeDept !== 'FORENSIC' && activeDept !== 'PROSECUTION' && 'Case Register'}
+                </h3>
                 <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  All 3 departments reference this exact record.
+                  {activeDept === 'POLICE' && 'Active police incident records and evidence intake register.'}
+                  {activeDept === 'FORENSIC' && 'Authoritative case inventory undergoing forensic examination and triage.'}
+                  {activeDept === 'PROSECUTION' && 'Court-admissible evidentiary files and judicial review records.'}
                 </span>
               </div>
               {activeDept === 'POLICE' && (
@@ -325,7 +339,7 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                   <div>
                     <h3 className="ev-card-title">
                       {activeDept === 'POLICE' && 'Police Workspace: Ingestion & Examination Dispatch'}
-                      {activeDept === 'FORENSIC' && 'Forensic Workspace: Intake, Triage & Versioned Reports'}
+                      {activeDept === 'FORENSIC' && 'Forensic Laboratory: Verification System & Analysis Workspace'}
                       {activeDept === 'PROSECUTION' && 'Prosecution Workspace: Evidentiary Audit & Judicial Sign-Off'}
                     </h3>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>
@@ -621,9 +635,19 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                     <button
                                       type="button"
                                       className="ev-btn ev-btn-primary"
-                                      style={{ fontSize: '11px', padding: '4px 10px' }}
-                                      disabled={isVerifying}
+                                      style={{
+                                        fontSize: '11px',
+                                        padding: '4px 10px',
+                                        opacity: canVerifyIntegrity ? 1 : 0.45,
+                                        cursor: canVerifyIntegrity ? 'pointer' : 'not-allowed',
+                                      }}
+                                      disabled={isVerifying || !canVerifyIntegrity}
                                       onClick={() => onRunVerification(fv.id)}
+                                      title={
+                                        canVerifyIntegrity
+                                          ? 'Stream private storage payload and compute live NIST FIPS 180-4 SHA-256'
+                                          : `Restricted: SHA-256 cryptographic verification is restricted to Forensic Examiner, Public Prosecutor, and Admin roles (Active role: ${currentUser.role})`
+                                      }
                                     >
                                       <ShieldCheckIcon size={13} />
                                       {isVerifying ? 'Verifying Stream...' : 'Verify SHA-256'}
@@ -632,10 +656,19 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                     <button
                                       type="button"
                                       className="ev-btn ev-btn-danger"
-                                      style={{ fontSize: '11px', padding: '4px 8px' }}
-                                      disabled={isVerifying}
+                                      style={{
+                                        fontSize: '11px',
+                                        padding: '4px 8px',
+                                        opacity: canTamperOrRestore ? 1 : 0.45,
+                                        cursor: canTamperOrRestore ? 'pointer' : 'not-allowed',
+                                      }}
+                                      disabled={isVerifying || !canTamperOrRestore}
                                       onClick={() => onSimulateTamper(fv)}
-                                      title="Corrupt 1 byte in storage to demonstrate live tamper detection"
+                                      title={
+                                        canTamperOrRestore
+                                          ? 'Corrupt 1 byte in storage to demonstrate live cryptographic tamper detection'
+                                          : `Restricted: Storage tamper simulation is restricted to Forensic Examiner role (Active role: ${currentUser.role})`
+                                      }
                                     >
                                       <AlertTriangleIcon size={13} />
                                       Simulate Tamper
@@ -644,10 +677,19 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                     <button
                                       type="button"
                                       className="ev-btn ev-btn-success"
-                                      style={{ fontSize: '11px', padding: '4px 8px' }}
-                                      disabled={isVerifying}
+                                      style={{
+                                        fontSize: '11px',
+                                        padding: '4px 8px',
+                                        opacity: canTamperOrRestore ? 1 : 0.45,
+                                        cursor: canTamperOrRestore ? 'pointer' : 'not-allowed',
+                                      }}
+                                      disabled={isVerifying || !canTamperOrRestore}
                                       onClick={() => onRestorePristine(fv)}
-                                      title="Restore original uncorrupted bytes"
+                                      title={
+                                        canTamperOrRestore
+                                          ? 'Execute controlled recovery restoring authentic pristine bytes from private baseline storage'
+                                          : `Restricted: Controlled evidence restoration is restricted to Forensic Examiner role (Active role: ${currentUser.role})`
+                                      }
                                     >
                                       Restore Pristine
                                     </button>
@@ -748,54 +790,114 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
 
                           {/* FORENSIC ACTIONS */}
                           {activeDept === 'FORENSIC' && latestHandoff && (
-                            <div style={{ marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                              {latestHandoff.status === 'SUBMITTED' && (
-                                <>
+                            <div style={{ marginTop: '10px' }}>
+                              {!isForensicRole && (
+                                <div
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.12)',
+                                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                                    borderRadius: '6px',
+                                    padding: '10px 14px',
+                                    marginBottom: '10px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fca5a5', fontSize: '12px' }}>
+                                    <ShieldAlertIcon size={16} style={{ color: '#ef4444', flexShrink: 0 }} />
+                                    <span>
+                                      <strong>Forensic Clearance Required:</strong> Forensic custody handoff transitions (Accept, Reject, Exam) are restricted to the <strong>Forensic Examiner</strong> role. You are currently authenticated as <strong>{currentUser.name}</strong> ({currentUser.role}).
+                                    </span>
+                                  </div>
+                                  {onSwitchUser && (
+                                    <button
+                                      type="button"
+                                      className="ev-btn ev-btn-secondary"
+                                      style={{ fontSize: '11px', padding: '4px 10px', whiteSpace: 'nowrap', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                      onClick={() => onSwitchUser(DEPARTMENT_PRESETS.FORENSIC)}
+                                    >
+                                      ⚡ Switch Profile to Forensic Examiner
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                {latestHandoff.status === 'SUBMITTED' && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="ev-btn ev-btn-success"
+                                      style={{
+                                        fontSize: '12px',
+                                        opacity: isForensicRole ? 1 : 0.45,
+                                        cursor: isForensicRole ? 'pointer' : 'not-allowed',
+                                      }}
+                                      disabled={!isForensicRole}
+                                      onClick={() => onAcceptTransfer(latestHandoff.id)}
+                                      title={!isForensicRole ? `Restricted: Only Forensic Examiner can accept custody (Active: ${currentUser.role})` : 'Accept forensic custody'}
+                                    >
+                                      Accept Transfer
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="ev-btn ev-btn-danger"
+                                      style={{
+                                        fontSize: '12px',
+                                        opacity: isForensicRole ? 1 : 0.45,
+                                        cursor: isForensicRole ? 'pointer' : 'not-allowed',
+                                      }}
+                                      disabled={!isForensicRole}
+                                      onClick={() =>
+                                        onRejectTransfer({
+                                          handoffId: latestHandoff.id,
+                                          evdId: evItem.id,
+                                        })
+                                      }
+                                      title={!isForensicRole ? `Restricted: Only Forensic Examiner can return transfer (Active: ${currentUser.role})` : 'Reject or return handoff'}
+                                    >
+                                      Reject Transfer
+                                    </button>
+                                  </>
+                                )}
+
+                                {latestHandoff.status === 'RECEIVED' && (
+                                  <button
+                                    type="button"
+                                    className="ev-btn ev-btn-primary"
+                                    style={{
+                                      fontSize: '12px',
+                                      opacity: isForensicRole ? 1 : 0.45,
+                                      cursor: isForensicRole ? 'pointer' : 'not-allowed',
+                                    }}
+                                    disabled={!isForensicRole}
+                                    onClick={() => onStartExam(latestHandoff.id)}
+                                    title={!isForensicRole ? `Restricted: Only Forensic Examiner can begin examination (Active: ${currentUser.role})` : 'Begin forensic examination'}
+                                  >
+                                    Start Forensic Examination
+                                  </button>
+                                )}
+
+                                {latestHandoff.status === 'UNDER_EXAMINATION' && (
                                   <button
                                     type="button"
                                     className="ev-btn ev-btn-success"
-                                    style={{ fontSize: '12px' }}
-                                    onClick={() => onAcceptTransfer(latestHandoff.id)}
+                                    style={{
+                                      fontSize: '12px',
+                                      opacity: isForensicRole ? 1 : 0.45,
+                                      cursor: isForensicRole ? 'pointer' : 'not-allowed',
+                                    }}
+                                    disabled={!isForensicRole}
+                                    onClick={() => onMarkReportReady(latestHandoff.id)}
+                                    title={!isForensicRole ? `Restricted: Only Forensic Examiner can finalize examination (Active: ${currentUser.role})` : 'Mark examination report ready'}
                                   >
-                                    Accept Transfer
+                                    Finalize Examination &amp; Mark Report Ready
                                   </button>
-                                  <button
-                                    type="button"
-                                    className="ev-btn ev-btn-danger"
-                                    style={{ fontSize: '12px' }}
-                                    onClick={() =>
-                                      onRejectTransfer({
-                                        handoffId: latestHandoff.id,
-                                        evdId: evItem.id,
-                                      })
-                                    }
-                                  >
-                                    Reject Transfer
-                                  </button>
-                                </>
-                              )}
-
-                              {latestHandoff.status === 'RECEIVED' && (
-                                <button
-                                  type="button"
-                                  className="ev-btn ev-btn-primary"
-                                  style={{ fontSize: '12px' }}
-                                  onClick={() => onStartExam(latestHandoff.id)}
-                                >
-                                  Start Forensic Examination
-                                </button>
-                              )}
-
-                              {latestHandoff.status === 'UNDER_EXAMINATION' && (
-                                <button
-                                  type="button"
-                                  className="ev-btn ev-btn-success"
-                                  style={{ fontSize: '12px' }}
-                                  onClick={() => onMarkReportReady(latestHandoff.id)}
-                                >
-                                  Finalize Examination &amp; Mark Report Ready
-                                </button>
-                              )}
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -853,17 +955,33 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                           {/* FORENSIC FORM: CREATE/REVISE REPORT */}
                           {activeDept === 'FORENSIC' && (
                             <div style={{ marginTop: '10px' }}>
+                              {!isForensicRole && (
+                                <div style={{ fontSize: '11px', color: '#f87171', marginBottom: '6px' }}>
+                                  🔒 Authoring forensic examination reports requires Forensic Examiner clearance (Current role: {currentUser.role}).
+                                </div>
+                              )}
                               <textarea
                                 value={newFindingText}
                                 onChange={(e) => setNewFindingText(e.target.value)}
-                                placeholder="Record forensic findings to create next immutable report revision (e.g. v1, v2)..."
+                                placeholder={
+                                  isForensicRole
+                                    ? "Record forensic findings to create next immutable report revision (e.g. v1, v2)..."
+                                    : "Unauthorized: Forensic report authoring is restricted to Forensic Examiner role."
+                                }
                                 className="ev-textarea"
                                 rows={2}
+                                disabled={!isForensicRole}
                               />
                               <button
                                 type="button"
                                 className="ev-btn ev-btn-primary"
-                                style={{ marginTop: '8px', fontSize: '12px' }}
+                                style={{
+                                  marginTop: '8px',
+                                  fontSize: '12px',
+                                  opacity: isForensicRole ? 1 : 0.45,
+                                  cursor: isForensicRole ? 'pointer' : 'not-allowed',
+                                }}
+                                disabled={!isForensicRole || !newFindingText.trim()}
                                 onClick={() => onAddReportVersion(evItem.id)}
                               >
                                 Commit Immutable Report Version
@@ -885,19 +1003,62 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                               <div style={{ fontSize: '12px', fontWeight: 600, color: '#c084fc', marginBottom: '8px' }}>
                                 Judicial Review Assessment on Latest Report (v{evReports[0].version_number}):
                               </div>
+                              {!isProsecutionRole && (
+                                <div
+                                  style={{
+                                    background: 'rgba(168, 85, 247, 0.12)',
+                                    border: '1px solid rgba(168, 85, 247, 0.35)',
+                                    borderRadius: '6px',
+                                    padding: '8px 12px',
+                                    marginBottom: '10px',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    flexWrap: 'wrap',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#d8b4fe', fontSize: '11px' }}>
+                                    <ShieldAlertIcon size={14} style={{ color: '#c084fc', flexShrink: 0 }} />
+                                    <span>
+                                      <strong>Prosecution Clearance Required:</strong> Trial admission assessments require the <strong>Public Prosecutor</strong> role. (Current role: {currentUser.role}).
+                                    </span>
+                                  </div>
+                                  {onSwitchUser && (
+                                    <button
+                                      type="button"
+                                      className="ev-btn ev-btn-secondary"
+                                      style={{ fontSize: '10px', padding: '3px 8px', whiteSpace: 'nowrap', borderColor: '#c084fc', color: '#c084fc' }}
+                                      onClick={() => onSwitchUser(DEPARTMENT_PRESETS.PROSECUTION)}
+                                    >
+                                      ⚡ Switch to Prosecutor
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                               <input
                                 type="text"
                                 value={prosecutionNotes}
                                 onChange={(e) => setProsecutionNotes(e.target.value)}
-                                placeholder="Enter judicial review notes or clarification request details..."
+                                placeholder={
+                                  isProsecutionRole
+                                    ? "Enter judicial review notes or clarification request details..."
+                                    : "Unauthorized: Judicial review restricted to Public Prosecutor role."
+                                }
                                 className="ev-input"
                                 style={{ marginBottom: '8px' }}
+                                disabled={!isProsecutionRole}
                               />
                               <div style={{ display: 'flex', gap: '8px' }}>
                                 <button
                                   type="button"
                                   className="ev-btn ev-btn-success"
-                                  style={{ fontSize: '12px' }}
+                                  style={{
+                                    fontSize: '12px',
+                                    opacity: isProsecutionRole ? 1 : 0.45,
+                                    cursor: isProsecutionRole ? 'pointer' : 'not-allowed',
+                                  }}
+                                  disabled={!isProsecutionRole}
                                   onClick={() => onProsecutionDecision('ACCEPTED_FOR_TRIAL', evReports[0].id)}
                                 >
                                   Accept for Trial Presentation
@@ -905,7 +1066,12 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                 <button
                                   type="button"
                                   className="ev-btn ev-btn-warning"
-                                  style={{ fontSize: '12px' }}
+                                  style={{
+                                    fontSize: '12px',
+                                    opacity: isProsecutionRole ? 1 : 0.45,
+                                    cursor: isProsecutionRole ? 'pointer' : 'not-allowed',
+                                  }}
+                                  disabled={!isProsecutionRole}
                                   onClick={() =>
                                     onProsecutionDecision('FURTHER_EVIDENCE_REQUESTED', evReports[0].id)
                                   }

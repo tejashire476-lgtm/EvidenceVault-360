@@ -220,6 +220,184 @@ body {
   background: rgba(245, 158, 11, 0.12);
 }
 
+/* Isolated Department Portal Banner */
+.ev-portal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: #0d101c;
+  border-bottom: 1px solid var(--border-dim);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ev-portal-banner.portal-police {
+  border-left: 4px solid var(--accent-police);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, #0d101c 100%);
+}
+
+.ev-portal-banner.portal-forensic {
+  border-left: 4px solid var(--accent-forensic);
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.08) 0%, #0d101c 100%);
+}
+
+.ev-portal-banner.portal-prosecution {
+  border-left: 4px solid var(--accent-prosecution);
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.08) 0%, #0d101c 100%);
+}
+
+.ev-portal-banner.portal-storage {
+  border-left: 4px solid #38bdf8;
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, #0d101c 100%);
+}
+
+.ev-portal-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ev-portal-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portal-police .ev-portal-icon-box {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-police);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.portal-forensic .ev-portal-icon-box {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--accent-forensic);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.portal-prosecution .ev-portal-icon-box {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--accent-prosecution);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.portal-storage .ev-portal-icon-box {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.ev-portal-text h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 2px 0;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ev-portal-text p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.ev-portal-badge-active {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+}
+
+.portal-police .ev-portal-badge-active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.portal-forensic .ev-portal-badge-active {
+  background: rgba(6, 182, 212, 0.2);
+  color: #67e8f9;
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+.portal-prosecution .ev-portal-badge-active {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.portal-storage .ev-portal-badge-active {
+  background: rgba(56, 189, 248, 0.2);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.ev-portal-switch-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ev-portal-switch-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-right: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ev-portal-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #15192c;
+  border: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ev-portal-choice-btn:hover {
+  background: #1e243d;
+  color: var(--text-main);
+  border-color: var(--border-bright);
+}
+
+.ev-portal-choice-btn.active-choice-police {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--accent-police);
+  color: #93c5fd;
+}
+
+.ev-portal-choice-btn.active-choice-forensic {
+  background: rgba(6, 182, 212, 0.15);
+  border-color: var(--accent-forensic);
+  color: #67e8f9;
+}
+
+.ev-portal-choice-btn.active-choice-prosecution {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: var(--accent-prosecution);
+  color: #d8b4fe;
+}
+
 /* Main Container Layout */
 .ev-main {
   flex: 1;

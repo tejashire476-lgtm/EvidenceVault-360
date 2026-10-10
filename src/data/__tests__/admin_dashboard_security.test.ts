@@ -21,11 +21,10 @@ import { seedDatabase } from '../seed.ts';
 import {
   AdminAccessDeniedError,
   canAccessAdminPortal,
-  authorizeAdminClearance,
 } from '../../utils/security.ts';
 import { SecureEvidenceStorageEngine } from '../../utils/storage.ts';
 import { sanitizeCsvField } from '../../utils/auditReview.ts';
-import type { SecurityContext, UserRole } from '../../types.ts';
+import type { SecurityContext } from '../../types.ts';
 
 // ----------------------------------------------------------------------------
 // Test 1: Dedicated Admin Portal Ingress & Role Authorization Helper
@@ -433,9 +432,9 @@ test('Admin Security - Test 12: Admin can retrieve comprehensive System Health t
 test('Admin Security - Test 13: CSV report sanitization neutralizes formula injection', () => {
   // Test formula injection characters: '=', '+', '-', '@'
   assert.equal(sanitizeCsvField('=cmd|"/c calc"!A0'), `"'=cmd|""/c calc""!A0"`);
-  assert.equal(sanitizeCsvField('+1+2+3'), `\"'+1+2+3\"`);
-  assert.equal(sanitizeCsvField('-5+5'), `\"'-5+5\"`);
-  assert.equal(sanitizeCsvField('@SUM(A1:A10)'), `\"'@SUM(A1:A10)\"`);
+  assert.equal(sanitizeCsvField('+1+2+3'), `"'+1+2+3"`);
+  assert.equal(sanitizeCsvField('-5+5'), `"'-5+5"`);
+  assert.equal(sanitizeCsvField('@SUM(A1:A10)'), `"'@SUM(A1:A10)"`);
 
   // Standard safe strings are quoted per RFC 4180
   assert.equal(sanitizeCsvField('CASE-2026-001'), `"CASE-2026-001"`);
