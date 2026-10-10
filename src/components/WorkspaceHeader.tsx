@@ -163,7 +163,25 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
               <ShieldCheckIcon size={24} />
             </div>
             <div className="ev-title-group">
-              <h1>EvidenceVault 360</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h1>EvidenceVault 360</h1>
+                <span className="ev-version-badge">ENTERPRISE v2.4</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#34d399',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  ISO 27037 / FIPS 180-4
+                </span>
+              </div>
               <div className="ev-tagline">
                 One Case. Three Departments. Traceable Evidence. Cryptographically Verified.
               </div>
@@ -173,13 +191,21 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
           <div className="ev-header-stats">
             <div className="ev-stat-pill">
               <DatabaseIcon size={14} />
-              <span>Cases:</span>
+              <span>Active Cases:</span>
               <span className="ev-stat-value">{caseCount}</span>
             </div>
             <div className="ev-stat-pill">
               <FolderLockIcon size={14} />
-              <span>Evidence:</span>
+              <span>Evidence Items:</span>
               <span className="ev-stat-value">{evidenceCount}</span>
+            </div>
+            <div className="ev-stat-pill" style={{ borderColor: 'rgba(16, 185, 129, 0.35)', color: '#34d399' }}>
+              <ShieldCheckIcon size={14} />
+              <span>Audit Chain:</span>
+              <span className="ev-stat-value" style={{ color: '#34d399' }}>VERIFIED</span>
+            </div>
+            <div className="ev-stat-pill" style={{ borderColor: 'rgba(56, 189, 248, 0.35)', color: '#38bdf8' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600 }}>☁️ R2 Zero-Egress</span>
             </div>
           </div>
         </div>

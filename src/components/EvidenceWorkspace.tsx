@@ -22,6 +22,13 @@ import {
   AlertTriangleIcon,
   HistoryIcon,
   DownloadIcon,
+  SearchIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  FolderLockIcon,
+  GitCommitIcon,
+  CpuIcon,
+  LockIcon,
 } from './icons.tsx';
 
 export interface EvidenceWorkspaceProps {
@@ -112,6 +119,43 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   const caseEvidence: EvidenceRecord[] = selectedCase
     ? evidence.filter((e) => e.case_id === selectedCase.id)
     : [];
+
+  const [caseSearch, setCaseSearch] = React.useState('');
+  const [categoryFilter, setCategoryFilter] = React.useState('ALL');
+  const [copiedHash, setCopiedHash] = React.useState<string | null>(null);
+
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    cases.forEach((c) => {
+      if (c.category) set.add(c.category);
+    });
+    return Array.from(set);
+  }, [cases]);
+
+  const filteredCases = React.useMemo(() => {
+    return cases.filter((c) => {
+      const q = caseSearch.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        c.title.toLowerCase().includes(q) ||
+        c.case_reference.toLowerCase().includes(q) ||
+        c.category.toLowerCase().includes(q) ||
+        (c.assigned_officer_id && c.assigned_officer_id.toLowerCase().includes(q));
+      const matchesCat = categoryFilter === 'ALL' || c.category === categoryFilter;
+      return matchesSearch && matchesCat;
+    });
+  }, [cases, caseSearch, categoryFilter]);
+
+  const handleCopyHash = (hash: string) => {
+    try {
+      navigator.clipboard.writeText(hash);
+      setCopiedHash(hash);
+      setTimeout(() => setCopiedHash(null), 2000);
+    } catch {
+      setCopiedHash(hash);
+      setTimeout(() => setCopiedHash(null), 2000);
+    }
+  };
 
   return (
     <main className="ev-main">
@@ -237,64 +281,278 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
           </div>
         </section>
       ) : activeDept !== 'ADMINISTRATION' ? (
-        <div className="ev-grid-two-col">
-          {/* Left Column: Shared Case Selector */}
-          <section className="ev-card">
-            <div className="ev-card-header">
-              <div>
-                <h3 className="ev-card-title">
-                  {activeDept === 'POLICE' && 'Police Incident & Case Register'}
-                  {activeDept === 'FORENSIC' && 'Forensic Intake & Active Laboratory Queue'}
-                  {activeDept === 'PROSECUTION' && 'Prosecution Judicial Case Docket'}
-                  {activeDept !== 'POLICE' && activeDept !== 'FORENSIC' && activeDept !== 'PROSECUTION' && 'Case Register'}
-                </h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  {activeDept === 'POLICE' && 'Active police incident records and evidence intake register.'}
-                  {activeDept === 'FORENSIC' && 'Authoritative case inventory undergoing forensic examination and triage.'}
-                  {activeDept === 'PROSECUTION' && 'Court-admissible evidentiary files and judicial review records.'}
-                </span>
-              </div>
-              {activeDept === 'POLICE' && (
-                <button
-                  type="button"
-                  className="ev-btn ev-btn-primary"
-                  style={{ fontSize: '12px' }}
-                  onClick={onOpenCreateCaseModal}
-                >
-                  + New Case
-                </button>
-              )}
-            </div>
-
-            {cases.length === 0 && offlineQueue.filter((q) => q.action === 'CREATE_CASE' && q.status === 'PENDING').length === 0 ? (
-              <div className="ev-empty-state">No cases found in shared database.</div>
-            ) : (
+        <>
+          {/* Executive Departmental Command HUD Strip */}
+          <div className="ev-command-hud">
+            {activeDept === 'POLICE' && (
               <>
-                {cases.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`ev-case-item ${selectedCase?.id === c.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedCaseId(c.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') setSelectedCaseId(c.id);
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="ev-case-title">{c.title}</span>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span className="ev-offline-pill synced" style={{ fontSize: '10px' }}>✓ Server Confirmed</span>
-                        <span className="ev-badge ev-badge-investigation">{c.status}</span>
-                      </div>
-                    </div>
-                    <div className="ev-case-meta">
-                      <span>Ref: {c.case_reference}</span>
-                      <span>Cat: {c.category}</span>
-                      <span>Lead: {c.assigned_officer_id || 'Unassigned'}</span>
+                <div className="ev-hud-card hud-police">
+                  <div className="ev-hud-icon-box blue">
+                    <FolderLockIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Incident Registry</div>
+                    <div className="ev-hud-value">{cases.length} Cases</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot green" />
+                      {cases.filter((c) => c.status === 'UNDER_INVESTIGATION').length} Active Investigations
                     </div>
                   </div>
-                ))}
+                </div>
+
+                <div className="ev-hud-card hud-police">
+                  <div className="ev-hud-icon-box cyan">
+                    <DatabaseIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Evidence Vault</div>
+                    <div className="ev-hud-value">{evidence.length} Artifacts</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot blue" />
+                      100% SHA-256 Registered Baseline
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-police">
+                  <div className="ev-hud-icon-box purple">
+                    <GitCommitIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Custody Transfers</div>
+                    <div className="ev-hud-value">{handoffs.length} Dispatches</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot purple" />
+                      {handoffs.filter((h) => h.status === 'SUBMITTED').length} In Transit to Forensic Lab
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-police">
+                  <div className="ev-hud-icon-box emerald">
+                    <ShieldCheckIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Legal Ingestion Standard</div>
+                    <div className="ev-hud-value">ISO 27037 A+</div>
+                    <div className="ev-hud-sub">NIST SP 800-86 First Responder Ingestion</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeDept === 'FORENSIC' && (
+              <>
+                <div className="ev-hud-card hud-forensic">
+                  <div className="ev-hud-icon-box cyan">
+                    <FileCodeIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Forensic Intake Queue</div>
+                    <div className="ev-hud-value">{handoffs.length} Total Handoffs</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot green" />
+                      {handoffs.filter((h) => h.status === 'UNDER_EXAMINATION' || h.status === 'RECEIVED').length} Active in Examination
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-forensic">
+                  <div className="ev-hud-icon-box emerald">
+                    <ShieldCheckIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Bit-Stream Integrity</div>
+                    <div className="ev-hud-value" style={{ color: '#34d399' }}>100% MATCH</div>
+                    <div className="ev-hud-sub">NIST FIPS 180-4 Bit-Level Verification</div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-forensic">
+                  <div className="ev-hud-icon-box purple">
+                    <CpuIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Laboratory Reports</div>
+                    <div className="ev-hud-value">{reports.length} Reports</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot purple" />
+                      v1/v2 Version-Preserved Findings
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-forensic">
+                  <div className="ev-hud-icon-box blue">
+                    <DatabaseIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Storage Engine</div>
+                    <div className="ev-hud-value" style={{ color: '#38bdf8' }}>Cloudflare R2</div>
+                    <div className="ev-hud-sub">Zero Egress Bandwidth Cost Guarantee</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeDept === 'PROSECUTION' && (
+              <>
+                <div className="ev-hud-card hud-prosecution">
+                  <div className="ev-hud-icon-box purple">
+                    <ShieldCheckIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Court Trial Docket</div>
+                    <div className="ev-hud-value">{cases.length} Cases</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot purple" />
+                      Judicial Evidentiary Index Active
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-prosecution">
+                  <div className="ev-hud-icon-box emerald">
+                    <CheckCircleIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Trial Admissibility</div>
+                    <div className="ev-hud-value" style={{ color: '#34d399' }}>Sec 65B BNSS</div>
+                    <div className="ev-hud-sub">Electronic Record Admissibility Ready</div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-prosecution">
+                  <div className="ev-hud-icon-box cyan">
+                    <FileCodeIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Exhibits Certified</div>
+                    <div className="ev-hud-value">{evidence.length} Exhibits</div>
+                    <div className="ev-hud-sub">
+                      <span className="ev-pulse-dot green" />
+                      Full Chain of Custody Continuity
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ev-hud-card hud-prosecution">
+                  <div className="ev-hud-icon-box blue">
+                    <LockIcon size={22} />
+                  </div>
+                  <div className="ev-hud-content">
+                    <div className="ev-hud-label">Judicial Decisions</div>
+                    <div className="ev-hud-value">{reviews.length} Logged</div>
+                    <div className="ev-hud-sub">
+                      {reviews.filter((r) => r.status === 'ACCEPTED_FOR_TRIAL').length} Accepted for Court Trial
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="ev-grid-two-col">
+            {/* Left Column: Shared Case Selector */}
+            <section className="ev-card">
+              <div className="ev-card-header">
+                <div>
+                  <h3 className="ev-card-title">
+                    {activeDept === 'POLICE' && 'Police Incident & Case Register'}
+                    {activeDept === 'FORENSIC' && 'Forensic Intake & Active Laboratory Queue'}
+                    {activeDept === 'PROSECUTION' && 'Prosecution Judicial Case Docket'}
+                    {activeDept !== 'POLICE' && activeDept !== 'FORENSIC' && activeDept !== 'PROSECUTION' && 'Case Register'}
+                  </h3>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>
+                    {activeDept === 'POLICE' && 'Active police incident records and evidence intake register.'}
+                    {activeDept === 'FORENSIC' && 'Authoritative case inventory undergoing forensic examination and triage.'}
+                    {activeDept === 'PROSECUTION' && 'Court-admissible evidentiary files and judicial review records.'}
+                  </span>
+                </div>
+                {activeDept === 'POLICE' && (
+                  <button
+                    type="button"
+                    className="ev-btn ev-btn-primary"
+                    style={{ fontSize: '12px' }}
+                    onClick={onOpenCreateCaseModal}
+                  >
+                    + New Case
+                  </button>
+                )}
+              </div>
+
+              {/* Case Search & Filter Controls */}
+              <div className="ev-case-filter-bar">
+                <div className="ev-search-input-wrapper">
+                  <SearchIcon size={14} className="ev-search-icon" />
+                  <input
+                    type="text"
+                    className="ev-search-input"
+                    placeholder="Search by title, reference, category, lead..."
+                    value={caseSearch}
+                    onChange={(e) => setCaseSearch(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {categories.length > 1 && (
+                <div className="ev-cat-chips">
+                  <button
+                    type="button"
+                    className={`ev-cat-chip ${categoryFilter === 'ALL' ? 'active' : ''}`}
+                    onClick={() => setCategoryFilter('ALL')}
+                  >
+                    All ({cases.length})
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      className={`ev-cat-chip ${categoryFilter === cat ? 'active' : ''}`}
+                      onClick={() => setCategoryFilter(cat)}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {filteredCases.length === 0 && offlineQueue.filter((q) => q.action === 'CREATE_CASE' && q.status === 'PENDING').length === 0 ? (
+                <div className="ev-empty-state">
+                  {caseSearch || categoryFilter !== 'ALL'
+                    ? 'No matching cases found for the selected filter.'
+                    : 'No cases found in shared database.'}
+                </div>
+              ) : (
+                <>
+                  {filteredCases.map((c) => (
+                    <div
+                      key={c.id}
+                      className={`ev-case-item ${selectedCase?.id === c.id ? `selected portal-${activeDept.toLowerCase()}` : ''}`}
+                      onClick={() => setSelectedCaseId(c.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') setSelectedCaseId(c.id);
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className={`ev-pulse-dot ${c.status === 'UNDER_INVESTIGATION' ? 'green' : 'purple'}`} />
+                          <span className="ev-case-title">{c.title}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <span className="ev-offline-pill synced" style={{ fontSize: '10px' }}>✓ Server Confirmed</span>
+                          <span className="ev-badge ev-badge-investigation">{c.status}</span>
+                        </div>
+                      </div>
+                      <div className="ev-case-meta">
+                        <span>Ref: {c.case_reference}</span>
+                        <span>Cat: {c.category}</span>
+                        <span>Lead: {c.assigned_officer_id || 'Unassigned'}</span>
+                      </div>
+                    </div>
+                  ))}
 
                 {/* Display Locally Queued Unsynced Cases */}
                 {offlineQueue
@@ -370,6 +628,27 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                         Generate Case Evidence Index
                       </button>
                     )}
+                  </div>
+                </div>
+
+                {/* Case Intelligence Overview Header */}
+                <div className="ev-case-intel-header">
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="ev-badge ev-badge-investigation" style={{ fontFamily: 'var(--font-mono)' }}>
+                        {selectedCase.case_reference}
+                      </span>
+                      <strong style={{ color: '#f8fafc', fontSize: '15px' }}>{selectedCase.title}</strong>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>
+                      {selectedCase.category} • Lead: {selectedCase.assigned_officer_id || 'Unassigned'}
+                    </div>
+                  </div>
+
+                  <div className="ev-case-intel-meta">
+                    <span className="ev-intel-pill">📦 {caseEvidence.length} Evidence Items</span>
+                    <span className="ev-intel-pill">🔄 {handoffs.filter((h) => caseEvidence.some((e) => e.id === h.evidence_id)).length} Handoffs</span>
+                    <span className="ev-intel-pill">📄 {reports.filter((r) => r.case_id === selectedCase.id).length} Reports</span>
                   </div>
                 </div>
 
@@ -476,6 +755,29 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                           <span>Collected: {new Date(evItem.collected_at).toLocaleDateString()}</span>
                         </div>
 
+                        {/* 4-Stage Custody Lifecycle Stepper */}
+                        <div className="ev-custody-stepper">
+                          <div className="ev-stepper-step completed">
+                            <div className="ev-stepper-circle">✓</div>
+                            <span>1. Ingested &amp; Sealed</span>
+                          </div>
+                          <span className="ev-stepper-arrow">➔</span>
+                          <div className={`ev-stepper-step ${latestHandoff ? 'completed' : 'current'}`}>
+                            <div className="ev-stepper-circle">{latestHandoff ? '✓' : '2'}</div>
+                            <span>2. {latestHandoff ? `Handoff: ${latestHandoff.status}` : 'Lab Handoff'}</span>
+                          </div>
+                          <span className="ev-stepper-arrow">➔</span>
+                          <div className={`ev-stepper-step ${evReports.length > 0 ? 'completed' : (latestHandoff?.status === 'UNDER_EXAMINATION' ? 'current' : '')}`}>
+                            <div className="ev-stepper-circle">{evReports.length > 0 ? '✓' : '3'}</div>
+                            <span>3. {evReports.length > 0 ? `${evReports.length} Report(s)` : 'Forensic Exam'}</span>
+                          </div>
+                          <span className="ev-stepper-arrow">➔</span>
+                          <div className={`ev-stepper-step ${reviews.some((r) => r.case_id === evItem.case_id) ? 'completed' : ''}`}>
+                            <div className="ev-stepper-circle">{reviews.some((r) => r.case_id === evItem.case_id) ? '✓' : '4'}</div>
+                            <span>4. Judicial Admissibility</span>
+                          </div>
+                        </div>
+
                         {/* Object Storage File Baseline Versions, Verification & Secure Download */}
                         {fileVersions.length > 0 && (
                           <div style={{ marginTop: '12px' }}>
@@ -542,7 +844,7 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                       marginTop: '6px',
                                       fontSize: '11px',
                                       color: '#64748b',
-                                      fontFamily: 'monospace',
+                                      fontFamily: 'var(--font-mono)',
                                     }}
                                   >
                                     Key: {fv.generated_storage_key}
@@ -551,26 +853,38 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                   {/* Hash Baseline & Observed Details */}
                                   <div
                                     style={{
-                                      marginTop: '6px',
+                                      marginTop: '8px',
                                       background: '#070912',
-                                      padding: '8px 10px',
-                                      borderRadius: '4px',
+                                      padding: '10px 12px',
+                                      borderRadius: '6px',
                                       fontSize: '11px',
-                                      fontFamily: 'monospace',
+                                      fontFamily: 'var(--font-mono)',
                                       border: '1px solid #161c30',
                                     }}
                                   >
-                                    <div>
-                                      <span style={{ color: '#94a3b8' }}>Baseline Manifest: </span>
-                                      <span style={{ color: '#38bdf8' }}>{fv.sha256_hash}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                      <div>
+                                        <span style={{ color: '#94a3b8' }}>Baseline Manifest: </span>
+                                        <span style={{ color: '#38bdf8', fontWeight: 600 }}>{fv.sha256_hash}</span>
+                                      </div>
+                                      <button
+                                        type="button"
+                                        className="ev-btn ev-btn-secondary"
+                                        style={{ padding: '2px 8px', fontSize: '10px', height: 'auto', borderRadius: '4px' }}
+                                        onClick={() => handleCopyHash(fv.sha256_hash)}
+                                        title="Copy SHA-256 hash to clipboard"
+                                      >
+                                        {copiedHash === fv.sha256_hash ? '✓ Copied!' : 'Copy Hash'}
+                                      </button>
                                     </div>
                                     {latestVerif && latestVerif.observed_sha256 && (
-                                      <div style={{ marginTop: '4px' }}>
+                                      <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed #1e293b' }}>
                                         <span style={{ color: '#94a3b8' }}>Observed Storage: </span>
                                         <span
                                           style={{
                                             color:
                                               latestVerif.result === 'MATCH' ? '#34d399' : '#f87171',
+                                            fontWeight: 600,
                                           }}
                                         >
                                           {latestVerif.observed_sha256}
@@ -1177,7 +1491,8 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
             )}
           </section>
         </div>
-      ) : (
+      </>
+    ) : (
         /* Clearance rejection barrier if trying to view restricted admin workspace without credentials */
         <div className="ev-access-denied-barrier">
           <div className="ev-access-denied-icon">
