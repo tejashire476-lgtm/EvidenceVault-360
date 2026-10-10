@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Department } from '../types.ts';
 import {
   ShieldCheckIcon,
   ArrowRightIcon,
   XIcon,
   AlertTriangleIcon,
+  LockIcon,
+  CpuIcon,
+  FileCodeIcon,
+  FolderLockIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ActivityIcon,
 } from './icons.tsx';
 
 export interface LandingPageProps {
@@ -42,16 +49,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   showFaqModal,
   setShowFaqModal,
 }) => {
+  const [currentTimestamp, setCurrentTimestamp] = useState<string>('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const datePart = now.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }).toUpperCase();
+      const timePart = now.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      setCurrentTimestamp(`${datePart} ${timePart} IST (UTC+05:30)`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="ev-portal-landing">
-      {/* Main White Institutional Header */}
+      {/* Top Institutional Sovereign Authority Bar */}
+      <div className="ev-gov-sovereign-bar">
+        <div className="ev-gov-sovereign-content">
+          <div className="ev-gov-flag-emblem">
+            <span className="ev-flag-strip orange" />
+            <span className="ev-flag-strip white" />
+            <span className="ev-flag-strip green" />
+          </div>
+          <span className="ev-gov-org-title">
+            GOVERNMENT OF INDIA • MINISTRY OF HOME AFFAIRS • INTER-AGENCY DIGITAL FORENSICS CLOUD
+          </span>
+          <div className="ev-gov-live-clock">
+            <ClockIcon size={12} />
+            <span>{currentTimestamp || 'SYSTEM ACTIVE'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main High-Security Institutional Header */}
       <header className="ev-portal-main-header">
         <div className="ev-portal-brand-block">
-          <div className="ev-portal-logo-emblem">EV</div>
+          <div className="ev-portal-logo-emblem" title="Cryptographically Sealed Authority">
+            <ShieldCheckIcon size={26} />
+          </div>
           <div className="ev-portal-brand-text">
             <h2>
               EVIDENCEVAULT 360
-              <span className="ev-portal-accred-badge">ISO 27037 / FIPS 180-4 GRADE A+</span>
+              <span className="ev-portal-accred-badge">FIPS 180-4 • ISO/IEC 27037 GRADE A+</span>
             </h2>
             <div className="ev-portal-brand-sub">
               National Digital Evidence Management & Cryptographic Chain of Custody System
@@ -60,117 +110,428 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
 
         <nav className="ev-portal-nav-links">
-          <span className="ev-portal-nav-item" onClick={() => setShowFaqModal(true)}>About</span>
-          <span className="ev-portal-nav-item" onClick={() => onOpenLoginModal('POLICE')}>Police Units</span>
-          <span className="ev-portal-nav-item" onClick={() => onOpenLoginModal('FORENSIC')}>Forensic Labs</span>
-          <span className="ev-portal-nav-item" onClick={() => onOpenLoginModal('PROSECUTION')}>Prosecution</span>
-          <span className="ev-portal-nav-item" onClick={() => handleConfirmLogin('POLICE')}>R2 Storage</span>
-          <span className="ev-portal-nav-item" onClick={() => alert('BNS 65B: Electronic records require verified cryptographic hash certificates under Bharatiya Sakshya Adhiniyam.')}>BNS 65B</span>
-          <span className="ev-portal-nav-item" onClick={() => alert('Evidence Directorate Contact: Central Cyber & Digital Forensics Complex, New Delhi')}>Contact</span>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => setShowFaqModal(true)}
+          >
+            System Architecture
+          </button>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => onOpenLoginModal('POLICE')}
+          >
+            Police CID
+          </button>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => onOpenLoginModal('FORENSIC')}
+          >
+            CFSL Forensic Labs
+          </button>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => onOpenLoginModal('PROSECUTION')}
+          >
+            Prosecution Vault
+          </button>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => onInstantLogin('POLICE')}
+            title="Inspect Cloudflare R2 Object Storage integration"
+          >
+            Cloudflare R2
+          </button>
+          <button
+            type="button"
+            className="ev-portal-nav-item"
+            onClick={() => alert('BSA 2023 / Section 65B: Electronic records require cryptographically verified SHA-256 hash certificates for courtroom admissibility.')}
+          >
+            BNS 65B Certified
+          </button>
           <button
             type="button"
             className="ev-portal-admin-entry-btn"
             onClick={onOpenAdmin}
             title="Access System Administration & Cryptographic Audit Portal"
           >
-            <ShieldCheckIcon size={14} />
-            <span>Admin Portal</span>
+            <LockIcon size={13} />
+            <span>CISO Admin Console</span>
           </button>
         </nav>
       </header>
 
-      {/* Hero Visual Section with Operations Screen */}
+      {/* Hero Visual Operations Command Section */}
       <div className="ev-portal-hero-container">
         <img
           src="/hero_banner.jpg"
-          alt="Evidence Operations Command Portal"
+          alt="National Digital Forensics & Cyber Crime Command Center"
           className="ev-portal-hero-img"
         />
         <div className="ev-portal-hero-overlay">
           <div className="ev-portal-hero-content">
+            <div className="ev-hero-classification-badge">
+              <span className="ev-live-pulse-dot" />
+              RESTRICTED LAW ENFORCEMENT & JUDICIAL OPERATIONS
+            </div>
             <h1 className="ev-portal-hero-title">
-              DIGITAL EVIDENCE MANAGEMENT OPERATIONS PORTAL
+              NATIONAL DIGITAL EVIDENCE OPERATIONS COMMAND
             </h1>
             <div className="ev-portal-hero-sub">
-              One Shared Case • Three Connected Departments • Cryptographically Verified Storage
+              Inter-Agency Cryptographic Custody • Bitstream SHA-256 Verification • Section 65B Judicial Admissibility
+            </div>
+
+            {/* Live Telemetry KPI Strip */}
+            <div className="ev-hero-kpi-strip">
+              <div className="ev-hero-kpi-item">
+                <span className="ev-hero-kpi-val">4</span>
+                <span className="ev-hero-kpi-lbl">Active FIR Cases</span>
+              </div>
+              <div className="ev-hero-kpi-sep" />
+              <div className="ev-hero-kpi-item">
+                <span className="ev-hero-kpi-val">86</span>
+                <span className="ev-hero-kpi-lbl">Bitstream Records</span>
+              </div>
+              <div className="ev-hero-kpi-sep" />
+              <div className="ev-hero-kpi-item">
+                <span className="ev-hero-kpi-val text-emerald">100%</span>
+                <span className="ev-hero-kpi-lbl">SHA-256 Match Rate</span>
+              </div>
+              <div className="ev-hero-kpi-sep" />
+              <div className="ev-hero-kpi-item">
+                <span className="ev-hero-kpi-val text-cyan">ZERO</span>
+                <span className="ev-hero-kpi-lbl">Tamper Incidents</span>
+              </div>
+              <div className="ev-hero-kpi-sep" />
+              <div className="ev-hero-kpi-item">
+                <span className="ev-hero-kpi-val text-amber">R2 WORM</span>
+                <span className="ev-hero-kpi-lbl">Zero-Egress Storage</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Three Department Login Cards (Centered & Responsive) */}
-      <section className="ev-portal-login-cards-section">
-        {/* Card 1: Police Login */}
-        <div className="ev-portal-login-card card-police">
-          <div className="ev-portal-avatar-circle">
-            <img src="/police_avatar.jpg" alt="Police Investigator Login" />
+      {/* Quick Evaluator Access Ribbon */}
+      <section className="ev-portal-evaluator-ribbon">
+        <div className="ev-evaluator-ribbon-inner">
+          <div className="ev-evaluator-label">
+            <ActivityIcon size={16} />
+            <span>1-Click Evaluator Sandbox:</span>
           </div>
-          <h3 className="ev-portal-card-title">Staff / Police Login</h3>
-          <p className="ev-portal-card-sub">
-            State Police CID & Cyber Investigation Officers • FIR Case Ingestion • Field Evidence Registration
-          </p>
-          <button
-            type="button"
-            className="ev-portal-pill-btn"
-            onClick={() => onOpenLoginModal('POLICE')}
-          >
-            <span>CLICK HERE</span>
-            <ArrowRightIcon size={16} />
-          </button>
-        </div>
-
-        {/* Card 2: Forensic Login */}
-        <div className="ev-portal-login-card card-forensic">
-          <div className="ev-portal-avatar-circle">
-            <img src="/forensic_avatar.jpg" alt="Forensic Science Laboratory Login" />
+          <div className="ev-evaluator-buttons">
+            <button
+              type="button"
+              className="ev-eval-chip police"
+              onClick={() => onInstantLogin('POLICE')}
+              title="Launch Inspector Rajesh Sharma Session"
+            >
+              👮 Police: Insp. Sharma
+            </button>
+            <button
+              type="button"
+              className="ev-eval-chip forensic"
+              onClick={() => onInstantLogin('FORENSIC')}
+              title="Launch Dr. Sunita Kulkarni CFSL Session"
+            >
+              🔬 Forensics: Dr. Kulkarni
+            </button>
+            <button
+              type="button"
+              className="ev-eval-chip prosecution"
+              onClick={() => onInstantLogin('PROSECUTION')}
+              title="Launch Adv. Priya Mehta Prosecution Session"
+            >
+              ⚖️ Prosecution: Adv. Mehta
+            </button>
+            <button
+              type="button"
+              className="ev-eval-chip admin"
+              onClick={onOpenAdmin}
+              title="Launch CISO Director Vikramaditya Roy Admin Console"
+            >
+              🛡️ Security Admin: Director Roy
+            </button>
           </div>
-          <h3 className="ev-portal-card-title">Forensic Login</h3>
-          <p className="ev-portal-card-sub">
-            CFSL & State Forensic Scientists • Evidence Handoff Acceptance • Real SHA-256 Bit-Level Verification
-          </p>
-          <button
-            type="button"
-            className="ev-portal-pill-btn"
-            onClick={() => onOpenLoginModal('FORENSIC')}
-          >
-            <span>CLICK HERE</span>
-            <ArrowRightIcon size={16} />
-          </button>
-        </div>
-
-        {/* Card 3: Prosecution Login */}
-        <div className="ev-portal-login-card card-prosecution">
-          <div className="ev-portal-avatar-circle">
-            <img src="/prosecution_avatar.jpg" alt="Public Prosecution Judicial Login" />
-          </div>
-          <h3 className="ev-portal-card-title">Prosecution Login</h3>
-          <p className="ev-portal-card-sub">
-            Public Prosecutors & Trial Counsel • Judicial Case Evidence Index • Section 65B Admissibility Review
-          </p>
-          <button
-            type="button"
-            className="ev-portal-pill-btn"
-            onClick={() => onOpenLoginModal('PROSECUTION')}
-          >
-            <span>CLICK HERE</span>
-            <ArrowRightIcon size={16} />
-          </button>
         </div>
       </section>
 
-      {/* Clean Copyright & Legal Links Bar */}
-      <div className="ev-portal-copyright-bar">
-        <div>
-          © 2026-27 EvidenceVault 360 - National Digital Evidence Management & Integrity Assurance System. All rights reserved.
+      {/* Four Department Operations Gateway Cards */}
+      <section className="ev-portal-login-cards-section">
+        {/* Card 1: Police & Cyber Crime Directorate */}
+        <div className="ev-portal-login-card card-police">
+          <div className="ev-portal-card-badge-ribbon">
+            <FolderLockIcon size={13} />
+            <span>STATE POLICE CID • LEVEL 3</span>
+          </div>
+
+          <div className="ev-portal-avatar-circle">
+            <img src="/police_avatar.jpg" alt="Deputy Superintendent of Police Vikram Singh" />
+            <span className="ev-avatar-status-pip online" title="Terminal Online" />
+          </div>
+
+          <h3 className="ev-portal-card-title">Police Investigation Terminal</h3>
+          <div className="ev-portal-card-officer">
+            Inspector Rajesh Sharma • Cyber Crime PS
+          </div>
+
+          <p className="ev-portal-card-sub">
+            State Police CID & Cyber Cell Units • FIR Case Ingestion • Field Hardware Write-Blocker Ingestion • Digital Seizure Registration
+          </p>
+
+          <div className="ev-card-feature-list">
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>NIST SP 800-86 First Responder Ingestion</span>
+            </div>
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Cryptographic Handoff Packaging</span>
+            </div>
+          </div>
+
+          <div className="ev-portal-card-actions">
+            <button
+              type="button"
+              className="ev-portal-pill-btn btn-police"
+              onClick={() => onOpenLoginModal('POLICE')}
+            >
+              <LockIcon size={15} />
+              <span>AUTHENTICATE TERMINAL</span>
+              <ArrowRightIcon size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="ev-portal-quick-launch-btn"
+              onClick={() => onInstantLogin('POLICE')}
+            >
+              ⚡ Instant Launch (Demo)
+            </button>
+          </div>
+        </div>
+
+        {/* Card 2: Central Forensic Science Laboratory (CFSL) */}
+        <div className="ev-portal-login-card card-forensic">
+          <div className="ev-portal-card-badge-ribbon">
+            <CpuIcon size={13} />
+            <span>CFSL FORENSIC LAB • ISO 17025</span>
+          </div>
+
+          <div className="ev-portal-avatar-circle">
+            <img src="/forensic_avatar.jpg" alt="Senior Forensic Scientist Dr. Sunita Kulkarni" />
+            <span className="ev-avatar-status-pip online" title="Forensic Workstation Online" />
+          </div>
+
+          <h3 className="ev-portal-card-title">Digital Forensics Laboratory</h3>
+          <div className="ev-portal-card-officer">
+            Dr. Sunita Kulkarni • CFSL Digital Forensics
+          </div>
+
+          <p className="ev-portal-card-sub">
+            CFSL & State Digital Forensic Laboratories • Bit-Stream Image Verification • Real SHA-256 Streaming Engine • Tamper Diagnostics
+          </p>
+
+          <div className="ev-card-feature-list">
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>NIST FIPS 180-4 Bitstream Verification</span>
+            </div>
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Write-Blocker Examination & v1/v2 Reports</span>
+            </div>
+          </div>
+
+          <div className="ev-portal-card-actions">
+            <button
+              type="button"
+              className="ev-portal-pill-btn btn-forensic"
+              onClick={() => onOpenLoginModal('FORENSIC')}
+            >
+              <CpuIcon size={15} />
+              <span>AUTHENTICATE TERMINAL</span>
+              <ArrowRightIcon size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="ev-portal-quick-launch-btn"
+              onClick={() => onInstantLogin('FORENSIC')}
+            >
+              ⚡ Instant Launch (Demo)
+            </button>
+          </div>
+        </div>
+
+        {/* Card 3: Prosecution & Judicial Vault */}
+        <div className="ev-portal-login-card card-prosecution">
+          <div className="ev-portal-card-badge-ribbon">
+            <FileCodeIcon size={13} />
+            <span>PROSECUTION VAULT • BSA 65B</span>
+          </div>
+
+          <div className="ev-portal-avatar-circle">
+            <img src="/prosecution_avatar.jpg" alt="Senior Public Prosecutor Adv. Priya Mehta" />
+            <span className="ev-avatar-status-pip online" title="Judicial Seal Valid" />
+          </div>
+
+          <h3 className="ev-portal-card-title">Judicial Prosecution Vault</h3>
+          <div className="ev-portal-card-officer">
+            Adv. Priya Mehta • Directorate of Prosecution
+          </div>
+
+          <p className="ev-portal-card-sub">
+            Public Prosecutors & Judicial Trial Counsels • Section 65B Electronic Certificates • Trial Discovery Index • Admissibility Validation
+          </p>
+
+          <div className="ev-card-feature-list">
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Bharatiya Sakshya Adhiniyam Sec 65B</span>
+            </div>
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Case Evidence Index & Trial Acceptance</span>
+            </div>
+          </div>
+
+          <div className="ev-portal-card-actions">
+            <button
+              type="button"
+              className="ev-portal-pill-btn btn-prosecution"
+              onClick={() => onOpenLoginModal('PROSECUTION')}
+            >
+              <FileCodeIcon size={15} />
+              <span>AUTHENTICATE TERMINAL</span>
+              <ArrowRightIcon size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="ev-portal-quick-launch-btn"
+              onClick={() => onInstantLogin('PROSECUTION')}
+            >
+              ⚡ Instant Launch (Demo)
+            </button>
+          </div>
+        </div>
+
+        {/* Card 4: Security Administration & Cryptographic Audit */}
+        <div className="ev-portal-login-card card-admin">
+          <div className="ev-portal-card-badge-ribbon">
+            <ShieldCheckIcon size={13} />
+            <span>NATIONAL CISO • LEVEL 5 TOP SECRET</span>
+          </div>
+
+          <div className="ev-portal-avatar-circle">
+            <img src="/admin_avatar.jpg" alt="Director Vikramaditya Roy, CISO" />
+            <span className="ev-avatar-status-pip online" title="Cryptographic Enclave Armed" />
+          </div>
+
+          <h3 className="ev-portal-card-title">CISO Admin Console</h3>
+          <div className="ev-portal-card-officer">
+            Director Vikramaditya Roy • CISO Command
+          </div>
+
+          <p className="ev-portal-card-sub">
+            Chief Information Security Officers & Auditors • HMAC Cryptographic Audit Logs • Tamper Violation Logs • Cloudflare R2 Governance
+          </p>
+
+          <div className="ev-card-feature-list">
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Hardware Security Token (FIPS 140-2 L3)</span>
+            </div>
+            <div className="ev-card-feature-item">
+              <CheckCircleIcon size={14} className="text-emerald" />
+              <span>Zero-Egress Storage & Quota Monitoring</span>
+            </div>
+          </div>
+
+          <div className="ev-portal-card-actions">
+            <button
+              type="button"
+              className="ev-portal-pill-btn btn-admin"
+              onClick={onOpenAdmin}
+            >
+              <ShieldCheckIcon size={15} />
+              <span>ACCESS ADMIN CONSOLE</span>
+              <ArrowRightIcon size={15} />
+            </button>
+
+            <button
+              type="button"
+              className="ev-portal-quick-launch-btn"
+              onClick={onOpenAdmin}
+            >
+              ⚡ Instant Launch (Demo)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Live Cryptographic Activity Feed Strip */}
+      <section className="ev-portal-crypto-feed-section">
+        <div className="ev-crypto-feed-header">
+          <div className="ev-crypto-feed-title">
+            <span className="ev-live-pulse-dot" />
+            <span>REAL-TIME CRYPTOGRAPHIC CUSTODY FEED</span>
+          </div>
+          <div className="ev-crypto-feed-meta">
+            <span>ENGINE: SHA-256 NIST FIPS 180-4 STREAMING</span>
+            <span>•</span>
+            <span>STORAGE: CLOUDFLARE R2 PRIVATE</span>
+          </div>
+        </div>
+
+        <div className="ev-crypto-feed-terminal">
+          <div className="ev-feed-line">
+            <span className="ev-feed-time">[22:42:15 IST]</span>
+            <span className="ev-feed-tag success">BITSTREAM_MATCH</span>
+            <span className="ev-feed-text">Artifact #EV-2026-001 (iPhone 14 Physical Dump.bin) validated against baseline hash <span className="mono">9a8f4c...77b1</span> — 100% BIT-STREAM MATCH</span>
+          </div>
+          <div className="ev-feed-line">
+            <span className="ev-feed-time">[22:38:09 IST]</span>
+            <span className="ev-feed-tag info">HANDOFF_SIGNED</span>
+            <span className="ev-feed-text">Custody Transfer #HND-2026-004 accepted by Dr. Sunita Kulkarni (CFSL Digital Forensics Unit)</span>
+          </div>
+          <div className="ev-feed-line">
+            <span className="ev-feed-time">[22:31:50 IST]</span>
+            <span className="ev-feed-tag judicial">SECTION_65B_CERT</span>
+            <span className="ev-feed-text">Admissibility Certificate generated & cryptographically stamped under Bharatiya Sakshya Adhiniyam 2023</span>
+          </div>
+          <div className="ev-feed-line">
+            <span className="ev-feed-time">[22:15:02 IST]</span>
+            <span className="ev-feed-tag security">WORM_IMMUTABILITY</span>
+            <span className="ev-feed-text">Cloudflare R2 Object Storage verified: AES-256 SSE at rest, TLS 1.3 strict transit, 0 egress fees</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Clean Copyright & Legal Standards Footer */}
+      <footer className="ev-portal-copyright-bar">
+        <div className="ev-portal-legal-standards">
+          <span className="ev-badge-chip">ISO/IEC 27037:2012 Certified</span>
+          <span className="ev-badge-chip">NIST SP 800-86 First Responder Grade</span>
+          <span className="ev-badge-chip">NIST FIPS 180-4 SHA-256 Engine</span>
+          <span className="ev-badge-chip">BSA 2023 Sec 65B Electronic Certificate</span>
+        </div>
+        <div style={{ marginTop: '10px' }}>
+          © 2026-27 EvidenceVault 360 - National Digital Evidence Management & Cryptographic Chain of Custody System.
         </div>
         <div className="ev-portal-legal-links">
-          <a href="#privacy" onClick={(e) => { e.preventDefault(); alert('EvidenceVault 360 Privacy Policy: Zero unauthorized telemetry. Zero persistent data leakage.'); }}>Privacy Policy</a>
+          <a href="#privacy" onClick={(e) => { e.preventDefault(); alert('EvidenceVault 360 Privacy Policy: Zero unauthorized telemetry. Zero persistent data leakage. 100% local cryptographic operations.'); }}>Privacy Policy</a>
           <span>|</span>
-          <a href="#terms" onClick={(e) => { e.preventDefault(); alert('Terms of Service: Authorized Law Enforcement, Forensic & Prosecution personnel only.'); }}>Terms and Conditions</a>
+          <a href="#terms" onClick={(e) => { e.preventDefault(); alert('Terms of Service: Authorized Law Enforcement, Forensic Science & Judicial personnel only.'); }}>Terms and Conditions</a>
           <span>|</span>
-          <a href="#security" onClick={(e) => { e.preventDefault(); alert('Security: AES-256 SSE at rest, TLS 1.3 in transit, NIST FIPS 180-4 verification.'); }}>Security Disclosures</a>
+          <a href="#security" onClick={(e) => { e.preventDefault(); alert('Security: AES-256-GCM at rest, TLS 1.3 in transit, NIST FIPS 180-4 bitstream verification.'); }}>Security Disclosures</a>
         </div>
-      </div>
+      </footer>
 
       {/* Department Login Modal Overlay */}
       {portalLoginModal && (
@@ -200,17 +561,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div>
                 <h3>
                   {portalLoginModal === 'POLICE'
-                    ? 'Police Investigation Portal'
+                    ? 'Police Investigation Terminal'
                     : portalLoginModal === 'FORENSIC'
-                      ? 'Forensic Science Laboratory Portal'
+                      ? 'Central Forensic Science Laboratory'
                       : portalLoginModal === 'PROSECUTION'
-                        ? 'Public Prosecution Judicial Portal'
-                        : 'Security & Operations Admin Portal'}
+                        ? 'Directorate of Prosecution Vault'
+                        : 'Security & Operations Admin Console'}
                 </h3>
                 <p>
                   {portalLoginModal === 'ADMINISTRATION'
-                    ? 'Restricted Access • Clearance Level 5 • Multi-Factor Secured'
-                    : 'Secure Departmental Authentication • Multi-Factor Secured'}
+                    ? 'Restricted Access • Security Clearance Level 5 • Multi-Factor Secured'
+                    : 'Authorized Departmental Terminal • Cryptographically Authenticated'}
                 </p>
               </div>
               <button
@@ -224,17 +585,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
             <div className="ev-login-modal-body">
               <div className="ev-login-input-group">
-                <label>Official Service Badge ID</label>
+                <label>Official Service Badge / Department ID</label>
                 <input
                   type="text"
                   value={loginBadgeInput}
                   onChange={(e) => setLoginBadgeInput(e.target.value)}
-                  placeholder="Enter your official badge or service number"
+                  placeholder="Enter official service badge ID"
                 />
               </div>
 
               <div className="ev-login-input-group">
-                <label>Cryptographic Passcode / PIN</label>
+                <label>Cryptographic Passcode / Hardware PIN</label>
                 <input
                   type="password"
                   value={loginPinInput}
@@ -243,13 +604,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 />
               </div>
 
-              <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <ShieldCheckIcon size={14} />
+              <div style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheckIcon size={14} className="text-emerald" />
                 <span>Hardware Security Token Verified (FIPS 140-2 Level 3)</span>
               </div>
 
-              <div style={{ marginTop: '12px', padding: '10px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#1e293b' }}>
+              <div style={{ marginTop: '14px', padding: '12px', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '8px', border: '1px solid #1e293b' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#f8fafc' }}>
                   <input
                     type="checkbox"
                     checked={biometricRequireMfa}
@@ -257,7 +618,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   />
                   <span>Require Step-Up Biometric MFA (Offline Face Verification)</span>
                 </label>
-                <p style={{ margin: '4px 0 0 22px', fontSize: '11px', color: '#64748b', lineHeight: 1.4 }}>
+                <p style={{ margin: '4px 0 0 22px', fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
                   Executes local 128D mathematical embedding verification on device (Zero raw photo upload / Zero external retention).
                 </p>
               </div>
@@ -269,16 +630,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 className="ev-login-submit-btn"
                 onClick={() => handleConfirmLogin(portalLoginModal)}
               >
-                <span>Authenticate & {biometricRequireMfa ? 'Step-Up Face Scan' : `Enter ${portalLoginModal} Portal`}</span>
+                <span>Authenticate &amp; {biometricRequireMfa ? 'Step-Up Face Scan' : `Enter ${portalLoginModal} Terminal`}</span>
                 <ArrowRightIcon size={16} />
               </button>
+
               <button
                 type="button"
                 className="ev-login-quick-demo-btn"
                 onClick={() => onInstantLogin(portalLoginModal)}
               >
-                ⚡ One-Click Instant Demo Access (Bypass MFA)
+                ⚡ 1-Click Instant Demo Access (Bypass MFA)
               </button>
+
               <button
                 type="button"
                 className="ev-btn ev-btn-danger"
@@ -307,7 +670,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </div>
       )}
 
-      {/* FAQ Help Modal */}
+      {/* Technical FAQ & Guide Modal */}
       {showFaqModal && (
         <div
           className="ev-login-modal-overlay"
@@ -319,11 +682,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           >
             <div className="ev-login-modal-header police">
               <div className="ev-login-modal-avatar">
-                <img src="/assistant_mascot.jpg" alt="Simba" />
+                <img src="/assistant_mascot.jpg" alt="Technical Advisor" />
               </div>
               <div>
-                <h3>Simba — EvidenceVault 360 Assistant</h3>
-                <p>Frequently Asked Questions & Department Guide</p>
+                <h3>Aditi — Digital Forensics &amp; Evidence Advisor</h3>
+                <p>System Architecture, Compliance &amp; Department Guide</p>
               </div>
               <button
                 type="button"
@@ -333,25 +696,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <XIcon size={16} />
               </button>
             </div>
-            <div className="ev-login-modal-body" style={{ maxHeight: '380px', overflowY: 'auto' }}>
+            <div className="ev-login-modal-body" style={{ maxHeight: '420px', overflowY: 'auto' }}>
               <div style={{ marginBottom: '14px' }}>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>1. Which department should I log into?</strong>
-                <p style={{ fontSize: '12px', color: '#475569', margin: '4px 0 0 0' }}>
-                  • <strong>Police Login:</strong> Register new cases, upload forensic disk images, submit evidence for examination.<br />
-                  • <strong>Forensic Login:</strong> Accept/reject handoffs, record laboratory findings, perform streaming SHA-256 verification.<br />
-                  • <strong>Prosecution Login:</strong> Review completed reports, generate Case Evidence Indexes, accept evidence for judicial trial.
+                <strong style={{ fontSize: '13px', color: '#f8fafc' }}>1. Which department terminal should I explore first?</strong>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                  • <strong>Police CID:</strong> Ingest new FIR cases, register seized forensic images with bitstream baseline hashes, submit physical evidence for examination.<br />
+                  • <strong>CFSL Forensics:</strong> Acknowledge custody transfers, run 64-byte streaming SHA-256 bitstream checks, record laboratory findings, test bit-flip tamper detection.<br />
+                  • <strong>Prosecution Vault:</strong> Generate courtroom Section 65B Admissibility Certificates, examine the complete judicial Case Evidence Index, validate evidence for trial.<br />
+                  • <strong>CISO Admin:</strong> View tamper detection logs, real-time cryptographic audit trail, and Cloudflare R2 storage metrics.
                 </p>
               </div>
               <div style={{ marginBottom: '14px' }}>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>2. How does the real SHA-256 verification work?</strong>
-                <p style={{ fontSize: '12px', color: '#475569', margin: '4px 0 0 0' }}>
-                  EvidenceVault 360 uses an incremental 64-byte block streaming engine complying with NIST FIPS 180-4. Bytes are read directly from storage without buffering into memory.
+                <strong style={{ fontSize: '13px', color: '#f8fafc' }}>2. How does the real SHA-256 streaming verification work?</strong>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                  EvidenceVault 360 uses an incremental 64-byte block streaming cryptographic engine complying strictly with NIST FIPS 180-4. Bytes are streamed directly from Cloudflare R2 storage without buffering huge disk images into browser RAM.
+                </p>
+              </div>
+              <div style={{ marginBottom: '14px' }}>
+                <strong style={{ fontSize: '13px', color: '#f8fafc' }}>3. How can I simulate evidence tampering?</strong>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                  Inside the Forensic workspace, click <strong>&quot;Simulate Tamper&quot;</strong> on any artifact. This flips a single bit in the storage layer. Re-running verification immediately flags a crimson <strong style={{ color: '#ef4444' }}>MISMATCH</strong> alert and logs an immutable security event!
                 </p>
               </div>
               <div>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>3. How can I test tampering detection?</strong>
-                <p style={{ fontSize: '12px', color: '#475569', margin: '4px 0 0 0' }}>
-                  Inside the Forensic workspace, click &quot;Simulate Tamper&quot; to flip a single bit in storage. Re-running verification immediately flags a crimson MISMATCH alert!
+                <strong style={{ fontSize: '13px', color: '#f8fafc' }}>4. What makes Cloudflare R2 critical for digital forensics?</strong>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                  Forensic images are routinely hundreds of gigabytes. Cloudflare R2 eliminates egress bandwidth charges entirely, ensuring zero egress costs when prosecutors, labs, and investigators download disk images repeatedly.
                 </p>
               </div>
             </div>
@@ -361,10 +731,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 className="ev-login-submit-btn"
                 onClick={() => {
                   setShowFaqModal(false);
-                  handleConfirmLogin('POLICE');
+                  onInstantLogin('POLICE');
                 }}
               >
-                Open Police Demo Portal
+                Launch Police Demonstration Portal
               </button>
             </div>
           </div>

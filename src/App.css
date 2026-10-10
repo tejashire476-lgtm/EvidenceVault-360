@@ -1258,188 +1258,170 @@ body {
 }
 
 /* ============================================================================
-   INSTITUTIONAL 3-PORTAL LOGIN LANDING PAGE (POLICE, FORENSIC, PROSECUTION)
-   Exact match to institutional multi-portal layout with responsive design
+   NATIONAL DIGITAL EVIDENCE OPERATIONS COMMAND (LANDING & GATEWAY HUBS)
+   Authoritative law enforcement & digital forensics aesthetic
    ============================================================================ */
 
 .ev-portal-landing {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f1f5f9;
-  color: #1e293b;
+  background-color: #070b14;
+  color: #f1f5f9;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
 }
 
-/* 1. Top Red Utility Bar */
-.ev-portal-topbar {
-  background: linear-gradient(90deg, #c51b24 0%, #b3141d 100%);
-  color: #ffffff;
+/* 1. Top Sovereign Authority Bar */
+.ev-gov-sovereign-bar {
+  background: #04070e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 6px 32px;
   font-size: 11px;
   font-weight: 700;
-  padding: 6px 32px;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.ev-gov-sovereign-content {
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.ev-portal-top-links {
+.ev-gov-flag-emblem {
+  display: inline-flex;
+  flex-direction: column;
+  width: 14px;
+  height: 10px;
+  border-radius: 1px;
+  overflow: hidden;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.ev-flag-strip {
+  flex: 1;
+  width: 100%;
+}
+
+.ev-flag-strip.orange { background: #ff9933; }
+.ev-flag-strip.white { background: #ffffff; }
+.ev-flag-strip.green { background: #138808; }
+
+.ev-gov-org-title {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 8px;
+  color: #cbd5e1;
 }
 
-.ev-portal-top-links a {
-  color: #ffffff;
-  text-decoration: none;
-  transition: opacity 0.2s;
-}
-
-.ev-portal-top-links a:hover {
-  text-decoration: underline;
-  opacity: 0.9;
-}
-
-.ev-portal-top-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.ev-portal-social-icons {
+.ev-gov-live-clock {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.ev-portal-social-pill {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.ev-portal-social-pill:hover {
-  background: rgba(255, 255, 255, 0.4);
-}
-
-.ev-portal-search-btn {
-  background: #facc15;
-  color: #000000;
-  border: none;
-  padding: 3px 12px;
-  border-radius: 4px;
+  color: #38bdf8;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 11px;
-  font-weight: 800;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
-.ev-portal-search-btn:hover {
-  background: #eab308;
-}
-
-/* 2. Main White Institutional Header */
+/* 2. Main Executive Institutional Header */
 .ev-portal-main-header {
-  background: #ffffff;
+  background: rgba(11, 17, 32, 0.95);
+  backdrop-filter: blur(12px);
   padding: 12px 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
 .ev-portal-brand-block {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .ev-portal-logo-emblem {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #1e3a8a, #0284c7);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 22px;
-  font-weight: 900;
-  box-shadow: 0 4px 10px rgba(30, 58, 138, 0.25);
-  border: 2px solid #38bdf8;
+  box-shadow: 0 0 16px rgba(2, 132, 199, 0.45);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  flex-shrink: 0;
 }
 
 .ev-portal-brand-text h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.01em;
+  color: #ffffff;
+  letter-spacing: 0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .ev-portal-accred-badge {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #f87171;
-  font-size: 11px;
-  font-weight: 800;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-size: 10px;
+  font-weight: 700;
   padding: 2px 8px;
   border-radius: 12px;
+  letter-spacing: 0.04em;
 }
 
 .ev-portal-brand-sub {
   font-size: 11px;
-  color: #64748b;
-  font-weight: 600;
+  color: #94a3b8;
+  font-weight: 500;
   letter-spacing: 0.02em;
 }
 
 .ev-portal-nav-links {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .ev-portal-nav-item {
-  color: #334155;
-  text-decoration: none;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
   font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 4px 0;
-  position: relative;
-  transition: color 0.2s;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 6px 10px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .ev-portal-nav-item:hover {
-  color: #c51b24;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
 }
 
 .ev-portal-admin-entry-btn {
-  background: #0f172a;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.25));
   color: #fbbf24;
-  border: 1px solid #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.5);
   padding: 6px 14px;
   border-radius: 6px;
   font-size: 12px;
@@ -1449,52 +1431,33 @@ body {
   gap: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
 }
 
 .ev-portal-admin-entry-btn:hover {
-  background: #1e293b;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(217, 119, 6, 0.45));
   color: #ffffff;
-  border-color: #f59e0b;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
-}
-
-.ev-portal-helpline-pill {
-  background: #c51b24;
-  color: #ffffff;
-  padding: 8px 18px;
-  border-radius: 24px;
-  font-size: 13px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 8px rgba(197, 27, 36, 0.3);
-  cursor: pointer;
-  transition: transform 0.15s, background 0.2s;
-}
-
-.ev-portal-helpline-pill:hover {
-  background: #a9151d;
+  border-color: #fbbf24;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.4);
   transform: translateY(-1px);
 }
 
-/* 3. Hero Visual Section */
+/* 3. Hero Visual Operations Command Section */
 .ev-portal-hero-container {
   position: relative;
   width: 100%;
-  max-height: 440px;
+  max-height: 480px;
   overflow: hidden;
-  background: #060913;
+  background: #04070e;
 }
 
 .ev-portal-hero-img {
   width: 100%;
-  height: 440px;
+  height: 480px;
   object-fit: cover;
-  object-position: center 35%;
+  object-position: center 30%;
   display: block;
-  filter: brightness(0.95) contrast(1.05);
+  filter: brightness(0.85) contrast(1.1);
 }
 
 .ev-portal-hero-overlay {
@@ -1503,26 +1466,65 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, rgba(6, 9, 19, 0.2) 0%, rgba(6, 9, 19, 0.6) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(7, 11, 20, 0.4) 0%,
+    rgba(7, 11, 20, 0.75) 50%,
+    rgba(7, 11, 20, 0.98) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  pointer-events: none;
 }
 
 .ev-portal-hero-content {
   text-align: center;
-  padding: 20px;
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.ev-hero-classification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 14px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.2);
+}
+
+.ev-live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px #ef4444;
+  animation: pulse-ring 1.8s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 1; }
 }
 
 .ev-portal-hero-title {
   color: #ffffff;
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 900;
-  letter-spacing: -0.01em;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8), 0 0 20px rgba(6, 182, 212, 0.6);
-  margin: 0 0 8px 0;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9), 0 0 28px rgba(56, 189, 248, 0.4);
+  margin: 0 0 10px 0;
+  line-height: 1.2;
 }
 
 .ev-portal-hero-sub {
@@ -1530,114 +1532,301 @@ body {
   font-size: 15px;
   font-weight: 600;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  max-width: 860px;
+  margin: 0 auto 24px auto;
+  line-height: 1.45;
 }
 
-/* Red Prominent Callout Banner (Matching screenshot) */
-.ev-portal-callout-banner {
-  background: #c51b24;
-  color: #ffffff;
-  padding: 16px 24px;
-  text-align: center;
-  font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(197, 27, 36, 0.35);
-  letter-spacing: 0.01em;
+/* Live Telemetry KPI Strip */
+.ev-hero-kpi-strip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 12px;
+  padding: 10px 24px;
+  gap: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  flex-wrap: wrap;
 }
 
-.ev-portal-callout-banner a {
-  color: #ffffff;
-  text-decoration: underline;
-  font-weight: 800;
-}
-
-/* 4. Three Department Login Cards (Police, Forensic, Prosecution) */
-.ev-portal-login-cards-section {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  width: 100%;
-  margin: 0;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
-}
-
-@media (max-width: 960px) {
-  .ev-portal-login-cards-section {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Individual Department Login Card */
-.ev-portal-login-card {
-  padding: 44px 24px;
+.ev-hero-kpi-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  gap: 2px;
 }
 
-/* Card 1: Police Login (matches Staff Login - light bluish lavender) */
-.ev-portal-login-card.card-police {
-  background-color: #dbe4f0;
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-/* Card 2: Forensic Login (matches Student Login - deep dark blue/slate) */
-.ev-portal-login-card.card-forensic {
-  background-color: #1a2233;
+.ev-hero-kpi-val {
+  font-size: 17px;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
   color: #ffffff;
 }
 
-/* Card 3: Prosecution Login (matches Parent Login - light bluish lavender) */
-.ev-portal-login-card.card-prosecution {
-  background-color: #e2e8f0;
-  border-left: 1px solid rgba(0, 0, 0, 0.05);
+.ev-hero-kpi-val.text-emerald { color: #34d399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+.ev-hero-kpi-val.text-cyan { color: #38bdf8; text-shadow: 0 0 10px rgba(56, 189, 248, 0.5); }
+.ev-hero-kpi-val.text-amber { color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+
+.ev-hero-kpi-lbl {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Card 4: Dedicated Admin Portal Login (High-security midnight slate with gold border) */
-.ev-portal-login-card.card-admin {
-  background-color: #0b1120;
-  color: #ffffff;
-  border-left: 1px solid #1e293b;
-  position: relative;
+.ev-hero-kpi-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.12);
 }
 
-/* Avatar Circles (Matching screenshot circular portraits) */
-.ev-portal-avatar-circle {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  overflow: hidden;
-  margin-bottom: 18px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+/* 4. Evaluator 1-Click Sandbox Ribbon */
+.ev-portal-evaluator-ribbon {
+  background: #090e1a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 10px 32px;
+}
+
+.ev-evaluator-ribbon-inner {
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #ffffff;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ev-evaluator-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fbbf24;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ev-evaluator-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ev-eval-chip {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ev-eval-chip:hover {
+  transform: translateY(-1px);
+}
+
+.ev-eval-chip.police:hover {
+  background: rgba(37, 99, 235, 0.25);
+  border-color: #3b82f6;
+  color: #93c5fd;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+.ev-eval-chip.forensic:hover {
+  background: rgba(6, 182, 212, 0.25);
+  border-color: #06b6d4;
+  color: #67e8f9;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+}
+
+.ev-eval-chip.prosecution:hover {
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  color: #fde68a;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.ev-eval-chip.admin:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: #10b981;
+  color: #a7f3d0;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+/* 5. Four Operations Gateway Cards Section */
+.ev-portal-login-cards-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  max-width: 1440px;
+  margin: 32px auto;
+  padding: 0 32px;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .ev-portal-login-cards-section {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .ev-portal-login-cards-section {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+  }
+}
+
+/* Individual Operations Gateway Card */
+.ev-portal-login-card {
+  background: linear-gradient(175deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 16, 30, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 28px 20px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.ev-portal-login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: all 0.25s ease;
+}
+
+.ev-portal-login-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+/* Police Accent */
+.ev-portal-login-card.card-police {
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.ev-portal-login-card.card-police::before {
+  background: linear-gradient(90deg, #1d4ed8, #3b82f6);
+}
+.ev-portal-login-card.card-police:hover {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.2);
+}
+
+/* Forensic Accent */
+.ev-portal-login-card.card-forensic {
+  border-color: rgba(6, 182, 212, 0.25);
+}
+.ev-portal-login-card.card-forensic::before {
+  background: linear-gradient(90deg, #0e7490, #06b6d4);
+}
+.ev-portal-login-card.card-forensic:hover {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 16px 36px rgba(6, 182, 212, 0.2);
+}
+
+/* Prosecution Accent */
+.ev-portal-login-card.card-prosecution {
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.ev-portal-login-card.card-prosecution::before {
+  background: linear-gradient(90deg, #b45309, #f59e0b);
+}
+.ev-portal-login-card.card-prosecution:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 16px 36px rgba(245, 158, 11, 0.2);
+}
+
+/* Admin Accent */
+.ev-portal-login-card.card-admin {
+  border-color: rgba(16, 185, 129, 0.25);
+}
+.ev-portal-login-card.card-admin::before {
+  background: linear-gradient(90deg, #047857, #10b981);
+}
+.ev-portal-login-card.card-admin:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 16px 36px rgba(16, 185, 129, 0.2);
+}
+
+/* Card Classification Badge */
+.ev-portal-card-badge-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.card-police .ev-portal-card-badge-ribbon { color: #60a5fa; border-color: rgba(96, 165, 250, 0.3); background: rgba(37, 99, 235, 0.1); }
+.card-forensic .ev-portal-card-badge-ribbon { color: #67e8f9; border-color: rgba(103, 232, 249, 0.3); background: rgba(6, 182, 212, 0.1); }
+.card-prosecution .ev-portal-card-badge-ribbon { color: #fde047; border-color: rgba(253, 224, 71, 0.3); background: rgba(245, 158, 11, 0.1); }
+.card-admin .ev-portal-card-badge-ribbon { color: #6ee7b7; border-color: rgba(110, 231, 183, 0.3); background: rgba(16, 185, 129, 0.1); }
+
+/* Avatar Portraits */
+.ev-portal-avatar-circle {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  position: relative;
+  background: #0f172a;
   transition: transform 0.25s ease;
 }
 
 .ev-portal-login-card:hover .ev-portal-avatar-circle {
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .card-police .ev-portal-avatar-circle {
-  border: 4px solid #1e3a8a;
+  border: 3px solid #3b82f6;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
 }
 
 .card-forensic .ev-portal-avatar-circle {
-  border: 4px solid #06b6d4;
-  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.3);
+  border: 3px solid #06b6d4;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
 }
 
 .card-prosecution .ev-portal-avatar-circle {
-  border: 4px solid #831843;
+  border: 3px solid #f59e0b;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
 }
 
 .card-admin .ev-portal-avatar-circle {
-  border: 4px solid #f59e0b;
-  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.4);
-  background: #0f172a;
+  border: 3px solid #10b981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
 }
 
 .ev-portal-avatar-circle img {
@@ -1647,230 +1836,295 @@ body {
   display: block;
 }
 
+.ev-avatar-status-pip {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 8px #10b981;
+}
+
+/* Card Titles */
 .ev-portal-card-title {
-  font-size: 24px;
+  font-size: 17px;
   font-weight: 800;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   letter-spacing: -0.01em;
-}
-
-.card-police .ev-portal-card-title {
-  color: #0f172a;
-}
-
-.card-forensic .ev-portal-card-title {
   color: #ffffff;
 }
 
-.card-prosecution .ev-portal-card-title {
-  color: #0f172a;
+.ev-portal-card-officer {
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  margin-bottom: 10px;
 }
 
-.card-admin .ev-portal-card-title {
-  color: #fbbf24;
-}
+.card-police .ev-portal-card-officer { color: #60a5fa; }
+.card-forensic .ev-portal-card-officer { color: #67e8f9; }
+.card-prosecution .ev-portal-card-officer { color: #fde047; }
+.card-admin .ev-portal-card-officer { color: #6ee7b7; }
 
 .ev-portal-card-sub {
-  font-size: 12px;
-  margin: 0 0 22px 0;
-  max-width: 260px;
+  font-size: 11.5px;
+  margin: 0 0 16px 0;
+  color: #94a3b8;
   line-height: 1.45;
+  min-height: 50px;
 }
 
-.card-police .ev-portal-card-sub {
-  color: #475569;
+/* Card Feature Bullet Checklist */
+.ev-card-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 20px;
+  text-align: left;
 }
 
-.card-forensic .ev-portal-card-sub {
-  color: #94a3b8;
+.ev-card-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: #cbd5e1;
 }
 
-.card-prosecution .ev-portal-card-sub {
-  color: #475569;
+.text-emerald { color: #34d399; }
+
+/* Card Actions */
+.ev-portal-card-actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  margin-top: auto;
 }
 
-.card-admin .ev-portal-card-sub {
-  color: #94a3b8;
-}
-
-/* The Iconic Red/Maroon/Amber Pill Buttons */
+/* High-Security Terminal Pill Button */
 .ev-portal-pill-btn {
   border: none;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 11px 30px;
-  border-radius: 28px;
+  padding: 11px 18px;
+  border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Police: Bright Red Pill Button */
-.card-police .ev-portal-pill-btn {
-  background: #c51b24;
+  width: 100%;
   color: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
-.card-police .ev-portal-pill-btn:hover {
-  background: #a9151d;
+.ev-portal-pill-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(197, 27, 36, 0.4);
 }
 
-/* Forensic: Deep Burgundy / Dark Maroon Pill Button */
-.card-forensic .ev-portal-pill-btn {
-  background: #4c0519;
-  color: #ffffff;
-  border: 1px solid #881337;
+.btn-police {
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+  border: 1px solid #3b82f6;
+}
+.btn-police:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
 }
 
-.card-forensic .ev-portal-pill-btn:hover {
-  background: #700b25;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(136, 19, 55, 0.4);
+.btn-forensic {
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+  border: 1px solid #06b6d4;
+}
+.btn-forensic:hover {
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.45);
 }
 
-/* Prosecution: Bright Red Pill Button */
-.card-prosecution .ev-portal-pill-btn {
-  background: #c51b24;
-  color: #ffffff;
-}
-
-.card-prosecution .ev-portal-pill-btn:hover {
-  background: #a9151d;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(197, 27, 36, 0.4);
-}
-
-/* Admin: Amber / Gold High-Security Pill Button */
-.card-admin .ev-portal-pill-btn {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  color: #ffffff;
+.btn-prosecution {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 100%);
   border: 1px solid #f59e0b;
 }
-
-.card-admin .ev-portal-pill-btn:hover {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  transform: translateY(-2px);
+.btn-prosecution:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   box-shadow: 0 6px 18px rgba(245, 158, 11, 0.45);
 }
 
-/* 5. Institutional 4-Column Footer (Matching screenshot) */
-.ev-portal-footer {
-  background-color: #1e2530;
-  color: #cbd5e1;
-  padding: 48px 32px 32px 32px;
-  border-top: 2px solid #334155;
+.btn-admin {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  border: 1px solid #10b981;
+}
+.btn-admin:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
 }
 
-.ev-portal-footer-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 36px;
-  max-width: 1360px;
-  margin: 0 auto;
-}
-
-.ev-portal-footer-col h4 {
-  color: #ffffff;
-  font-size: 15px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0 0 18px 0;
-  position: relative;
-  padding-bottom: 8px;
-}
-
-.ev-portal-footer-col h4::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 32px;
-  height: 2px;
-  background: #c51b24;
-}
-
-.ev-portal-footer-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.ev-portal-footer-list li {
-  font-size: 13px;
+.ev-portal-quick-launch-btn {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.15);
   color: #94a3b8;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: color 0.15s;
+  transition: all 0.15s ease;
 }
 
-.ev-portal-footer-list li::before {
-  content: '•';
-  color: #c51b24;
-  font-size: 14px;
-}
-
-.ev-portal-footer-list li:hover {
+.ev-portal-quick-launch-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
   color: #f1f5f9;
-  text-decoration: underline;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.ev-portal-contact-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-  font-size: 13px;
-  color: #94a3b8;
-  line-height: 1.5;
+/* 6. Live Cryptographic Activity Feed */
+.ev-portal-crypto-feed-section {
+  max-width: 1440px;
+  margin: 0 auto 36px auto;
+  padding: 0 32px;
+  width: 100%;
 }
 
-.ev-portal-contact-item svg {
-  flex-shrink: 0;
-  color: #c51b24;
-  margin-top: 2px;
-}
-
-/* Bottom Bar */
-.ev-portal-copyright-bar {
-  background-color: #141a24;
-  border-top: 1px solid #283344;
-  padding: 16px 32px;
-  color: #94a3b8;
-  font-size: 12px;
+.ev-crypto-feed-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 10px 16px;
+  background: #090e1a;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ev-crypto-feed-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #38bdf8;
+}
+
+.ev-crypto-feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.ev-crypto-feed-terminal {
+  background: #030509;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 0 0 8px 8px;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.ev-feed-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.ev-feed-time {
+  color: #64748b;
+}
+
+.ev-feed-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.ev-feed-tag.success { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+.ev-feed-tag.info { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
+.ev-feed-tag.judicial { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+.ev-feed-tag.security { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+.ev-feed-text {
+  color: #cbd5e1;
+}
+
+.ev-feed-text .mono {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* 7. Institutional Footer & Legal Standards Bar */
+.ev-portal-copyright-bar {
+  background-color: #04070e;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 32px;
+  color: #94a3b8;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 12px;
+  text-align: center;
+}
+
+.ev-portal-legal-standards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ev-badge-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #cbd5e1;
+  font-weight: 600;
 }
 
 .ev-portal-legal-links {
   display: flex;
-  gap: 20px;
+  gap: 16px;
+  align-items: center;
+  font-size: 11.5px;
 }
 
 .ev-portal-legal-links a {
-  color: #94a3b8;
+  color: #38bdf8;
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color 0.15s;
 }
 
 .ev-portal-legal-links a:hover {
-  color: #ffffff;
   text-decoration: underline;
+  color: #ffffff;
 }
 
 /* 6. Floating Chat Assistant & WhatsApp Widget (Matching screenshot) */
@@ -1983,12 +2237,13 @@ body {
 }
 
 .ev-login-modal-box {
-  background: #ffffff;
-  color: #0f172a;
-  border-radius: 12px;
+  background: #0c1220;
+  color: #f8fafc;
+  border-radius: 14px;
   width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  max-width: 500px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   overflow: hidden;
   animation: modal-pop 0.2s ease-out;
 }
@@ -1999,45 +2254,49 @@ body {
 }
 
 .ev-login-modal-header {
-  padding: 24px;
+  padding: 22px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
 }
 
 .ev-login-modal-header.police {
-  background: linear-gradient(135deg, #1e3a8a, #1e40af);
+  background: linear-gradient(135deg, #0f2766 0%, #1e3a8a 100%);
   color: #ffffff;
+  border-bottom: 2px solid #3b82f6;
 }
 
 .ev-login-modal-header.forensic {
-  background: linear-gradient(135deg, #0e7490, #155e75);
+  background: linear-gradient(135deg, #064e5f 0%, #0e7490 100%);
   color: #ffffff;
+  border-bottom: 2px solid #06b6d4;
 }
 
 .ev-login-modal-header.prosecution {
-  background: linear-gradient(135deg, #831843, #9d174d);
-  color: #ffffff;
-}
-
-.ev-login-modal-header.administration {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
+  background: linear-gradient(135deg, #78350f 0%, #b45309 100%);
   color: #ffffff;
   border-bottom: 2px solid #f59e0b;
 }
 
+.ev-login-modal-header.administration {
+  background: linear-gradient(135deg, #064e3b 0%, #0f766e 100%);
+  color: #ffffff;
+  border-bottom: 2px solid #10b981;
+}
+
 .ev-login-modal-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .ev-login-modal-header p {
   margin: 4px 0 0 0;
-  font-size: 12px;
-  opacity: 0.9;
+  font-size: 11.5px;
+  color: #cbd5e1;
 }
 
 .ev-login-modal-avatar {
@@ -2045,9 +2304,10 @@ body {
   height: 54px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
-  background: #ffffff;
+  background: #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .ev-login-modal-avatar img {
@@ -2060,21 +2320,22 @@ body {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.15s ease;
 }
 
 .ev-login-modal-close:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
 }
 
 .ev-login-modal-body {
@@ -2082,68 +2343,76 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: #090e1a;
 }
 
 .ev-login-input-group label {
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  color: #475569;
+  color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   margin-bottom: 6px;
 }
 
 .ev-login-input-group input {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px 14px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  font-size: 14px;
-  background: #f8fafc;
-  color: #0f172a;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #1e293b;
+  font-size: 13.5px;
+  background: #04070e;
+  color: #f8fafc;
+  transition: all 0.15s ease;
 }
 
 .ev-login-input-group input:focus {
   outline: none;
-  border-color: #2563eb;
-  background: #ffffff;
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+  background: #080d19;
 }
 
 .ev-login-modal-footer {
-  padding: 16px 24px 24px 24px;
+  padding: 18px 24px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  background: #070b14;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .ev-login-submit-btn {
-  background: #c51b24;
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   color: #ffffff;
-  border: none;
+  border: 1px solid #3b82f6;
   padding: 12px 20px;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
 }
 
 .ev-login-submit-btn:hover {
-  background: #a9151d;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
+  transform: translateY(-1px);
 }
 
 .ev-login-quick-demo-btn {
-  background: #f1f5f9;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  padding: 9px 16px;
-  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.6);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 16px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
