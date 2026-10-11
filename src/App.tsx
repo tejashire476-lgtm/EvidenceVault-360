@@ -77,7 +77,7 @@ export default function App() {
           onProceedToWorkspace={(user) => {
             v.setCurrentUser(user);
             v.setActiveDept(user.department);
-            v.setActiveNavTab('PORTAL');
+            v.setActiveNavTab('DASHBOARD');
             v.setShowBiometricScanModal(false);
           }}
         />

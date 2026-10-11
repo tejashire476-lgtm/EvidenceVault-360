@@ -62,7 +62,7 @@ export function useVaultOperations() {
 
   // Active Workspace State
   const [activeDept, setActiveDept] = useState<Department | 'AUDIT' | 'STORAGE'>('POLICE');
-  const [activeNavTab, setActiveNavTab] = useState<'DASHBOARD' | 'PORTAL' | 'EVIDENCE' | 'CASES' | 'FORENSICS' | 'REPORTS' | 'CUSTODY' | 'USERS' | 'SETTINGS'>('PORTAL');
+  const [activeNavTab, setActiveNavTab] = useState<'DASHBOARD' | 'PORTAL' | 'EVIDENCE' | 'CASES' | 'FORENSICS' | 'REPORTS' | 'CUSTODY' | 'USERS' | 'SETTINGS'>('DASHBOARD');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('CASE-2026-001');
   const [newFindingText, setNewFindingText] = useState('');
   const [seedNotice, setSeedNotice] = useState<string | null>(null);
@@ -235,7 +235,7 @@ export function useVaultOperations() {
     } else {
       setCurrentUser(session);
       setActiveDept(dept);
-      setActiveNavTab('PORTAL');
+      setActiveNavTab('DASHBOARD');
       setPortalLoginModal(null);
     }
   };
@@ -255,7 +255,7 @@ export function useVaultOperations() {
     if (authResult.success && authResult.user) {
       setCurrentUser(authResult.user);
       setActiveDept(dept);
-      setActiveNavTab('PORTAL');
+      setActiveNavTab('DASHBOARD');
       setPortalLoginModal(null);
     } else if (authResult.error) {
       setLoginError(authResult.error);

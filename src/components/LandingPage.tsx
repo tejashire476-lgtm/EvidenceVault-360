@@ -12,6 +12,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ActivityIcon,
+  ScanFaceIcon,
 } from './icons.tsx';
 
 export interface LandingPageProps {
@@ -296,6 +297,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <CheckCircleIcon size={14} className="text-emerald" />
               <span>Cryptographic Handoff Packaging</span>
             </div>
+            <div className="ev-card-feature-item">
+              <ScanFaceIcon size={14} className="text-cyan" />
+              <span>On-Device Step-Up Face Scan (128D Embedding)</span>
+            </div>
           </div>
 
           <div className="ev-portal-card-actions">
@@ -303,9 +308,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               type="button"
               className="ev-portal-pill-btn btn-police"
               onClick={() => onOpenLoginModal('POLICE')}
+              title="Authenticate Police Terminal via Face Scan & Badge"
             >
-              <LockIcon size={15} />
-              <span>AUTHENTICATE TERMINAL</span>
+              <ScanFaceIcon size={15} />
+              <span>STEP-UP FACE SCAN AUTH</span>
               <ArrowRightIcon size={15} />
             </button>
 
@@ -349,6 +355,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <CheckCircleIcon size={14} className="text-emerald" />
               <span>Write-Blocker Examination & v1/v2 Reports</span>
             </div>
+            <div className="ev-card-feature-item">
+              <ScanFaceIcon size={14} className="text-cyan" />
+              <span>On-Device Step-Up Face Scan (128D Embedding)</span>
+            </div>
           </div>
 
           <div className="ev-portal-card-actions">
@@ -356,9 +366,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               type="button"
               className="ev-portal-pill-btn btn-forensic"
               onClick={() => onOpenLoginModal('FORENSIC')}
+              title="Authenticate Forensic Terminal via Face Scan & Badge"
             >
-              <CpuIcon size={15} />
-              <span>AUTHENTICATE TERMINAL</span>
+              <ScanFaceIcon size={15} />
+              <span>STEP-UP FACE SCAN AUTH</span>
               <ArrowRightIcon size={15} />
             </button>
 
@@ -402,6 +413,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <CheckCircleIcon size={14} className="text-emerald" />
               <span>Case Evidence Index & Trial Acceptance</span>
             </div>
+            <div className="ev-card-feature-item">
+              <ScanFaceIcon size={14} className="text-cyan" />
+              <span>On-Device Step-Up Face Scan (128D Embedding)</span>
+            </div>
           </div>
 
           <div className="ev-portal-card-actions">
@@ -409,9 +424,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               type="button"
               className="ev-portal-pill-btn btn-prosecution"
               onClick={() => onOpenLoginModal('PROSECUTION')}
+              title="Authenticate Prosecution Terminal via Face Scan & Badge"
             >
-              <FileCodeIcon size={15} />
-              <span>AUTHENTICATE TERMINAL</span>
+              <ScanFaceIcon size={15} />
+              <span>STEP-UP FACE SCAN AUTH</span>
               <ArrowRightIcon size={15} />
             </button>
 
