@@ -75,6 +75,10 @@ export function useVaultOperations() {
   const [caseIndexData, setCaseIndexData] = useState<CaseEvidenceIndex | null>(null);
   const [complianceReportData, setComplianceReportData] = useState<ComplianceAuditReport | null>(null);
   const [prosecutionNotes, setProsecutionNotes] = useState('');
+  const [clarificationValidationError, setClarificationValidationError] = useState<string | null>(null);
+  const [clarificationFeedback, setClarificationFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [forensicResponseDraft, setForensicResponseDraft] = useState<Record<string, string>>({});
 
   // Form states for New Case
   const [newCaseTitle, setNewCaseTitle] = useState('');
@@ -1134,29 +1138,91 @@ export function useVaultOperations() {
     status: 'ACCEPTED_FOR_TRIAL' | 'FURTHER_EVIDENCE_REQUESTED',
     reportId: string
   ) => {
+    if (status === 'FURTHER_EVIDENCE_REQUESTED' && !prosecutionNotes.trim()) {
+      setClarificationValidationError(
+        'Clarification notes are required. Please describe the specific questions, inconsistencies, or analysis needed from the forensic examiner before transmitting.'
+      );
+      return;
+    }
+
     const selectedCase = cases.find((c) => c.id === selectedCaseId) || cases[0];
     if (!selectedCase) return;
+
     try {
+      setClarificationValidationError(null);
+      setIsSubmittingReview(true);
+      const reviewerId = currentUser?.user_id || 'USR-PROSECUTOR-01';
+
       await globalDb.submitProsecutionReview({
         id: createId('REV'),
         case_id: selectedCase.id,
         report_id: reportId,
-        reviewer_id: 'USR-PROSECUTOR-01',
+        reviewer_id: reviewerId,
         status,
         review_notes:
           prosecutionNotes.trim() ||
-          (status === 'ACCEPTED_FOR_TRIAL'
-            ? 'Evidence integrity verified. Admissible for trial presentation.'
-            : 'Prosecution requested additional forensic clarification.'),
+          'Evidence integrity verified. Admissible for trial presentation.',
       });
+
       setProsecutionNotes('');
-      alert(
-        status === 'ACCEPTED_FOR_TRIAL'
-          ? 'Case evidence formally accepted for judicial trial presentation.'
-          : 'Clarification request logged and transmitted to forensic unit.'
-      );
+      setClarificationFeedback({
+        type: 'success',
+        message:
+          status === 'ACCEPTED_FOR_TRIAL'
+            ? 'Case evidence formally accepted for judicial trial presentation.'
+            : 'Clarification request logged and transmitted to forensic unit.',
+      });
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : String(err));
+      setClarificationFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const handleRespondToClarification = async (
+    reviewId: string,
+    responseNotes: string,
+    amendedReportContent?: string
+  ) => {
+    if (!responseNotes.trim()) {
+      setClarificationFeedback({
+        type: 'error',
+        message: 'Forensic clarification response notes cannot be empty.',
+      });
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      const responderId = currentUser?.user_id || 'USR-FORENSIC-01';
+
+      await globalDb.respondToClarificationRequest(
+        reviewId,
+        responseNotes.trim(),
+        responderId,
+        amendedReportContent
+      );
+
+      setForensicResponseDraft((prev) => {
+        const next = { ...prev };
+        delete next[reviewId];
+        return next;
+      });
+
+      setClarificationFeedback({
+        type: 'success',
+        message: 'Clarification response recorded and transmitted to Prosecution Portal.',
+      });
+    } catch (err: unknown) {
+      setClarificationFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -1321,6 +1387,14 @@ export function useVaultOperations() {
     handleMarkReportReady,
     handleAddReportVersion,
     handleProsecutionDecision,
+    handleRespondToClarification,
     handleOpenCaseIndex,
+    clarificationValidationError,
+    setClarificationValidationError,
+    clarificationFeedback,
+    setClarificationFeedback,
+    isSubmittingReview,
+    forensicResponseDraft,
+    setForensicResponseDraft,
   };
 }

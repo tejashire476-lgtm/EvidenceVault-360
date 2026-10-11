@@ -29,3 +29,6 @@ dist-ssr
 *.key
 *.cert
 hackthon/
+
+# Local Netlify folder
+.netlify

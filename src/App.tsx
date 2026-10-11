@@ -216,6 +216,14 @@ export default function App() {
             prosecutionNotes={v.prosecutionNotes}
             setProsecutionNotes={v.setProsecutionNotes}
             onProsecutionDecision={v.handleProsecutionDecision}
+            clarificationValidationError={v.clarificationValidationError}
+            setClarificationValidationError={v.setClarificationValidationError}
+            clarificationFeedback={v.clarificationFeedback}
+            setClarificationFeedback={v.setClarificationFeedback}
+            isSubmittingReview={v.isSubmittingReview}
+            forensicResponseDraft={v.forensicResponseDraft}
+            setForensicResponseDraft={v.setForensicResponseDraft}
+            onRespondToClarification={v.handleRespondToClarification}
             onSwitchToAdmin={() => {
               v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
               v.setActiveDept('ADMINISTRATION');

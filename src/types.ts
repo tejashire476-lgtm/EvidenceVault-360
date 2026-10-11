@@ -206,6 +206,12 @@ export interface ProsecutionReview {
   review_notes: string;
   created_at: string;
   updated_at: string;
+  // Forensic Clarification Interaction Lifecycle
+  clarification_status?: 'PENDING' | 'RESPONDED';
+  clarification_response?: string;
+  clarification_responder_id?: string;
+  clarification_responded_at?: string;
+  resulting_report_id?: string;
 }
 
 // ----------------------------------------------------------------------------

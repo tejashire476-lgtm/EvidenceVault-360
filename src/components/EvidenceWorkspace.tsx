@@ -68,6 +68,18 @@ export interface EvidenceWorkspaceProps {
     status: 'ACCEPTED_FOR_TRIAL' | 'FURTHER_EVIDENCE_REQUESTED',
     reportId: string
   ) => void;
+  clarificationValidationError?: string | null;
+  setClarificationValidationError?: (v: string | null) => void;
+  clarificationFeedback?: { type: 'success' | 'error'; message: string } | null;
+  setClarificationFeedback?: (v: { type: 'success' | 'error'; message: string } | null) => void;
+  isSubmittingReview?: boolean;
+  forensicResponseDraft?: Record<string, string>;
+  setForensicResponseDraft?: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  onRespondToClarification?: (
+    reviewId: string,
+    responseNotes: string,
+    amendedReportContent?: string
+  ) => void;
   onSwitchToAdmin: () => void;
   onReturnToDept: (dept: Department) => void;
   onSwitchUser?: (session: AuthenticatedSession) => void;
@@ -107,6 +119,13 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
   prosecutionNotes,
   setProsecutionNotes,
   onProsecutionDecision,
+  clarificationValidationError,
+  clarificationFeedback,
+  setClarificationFeedback,
+  isSubmittingReview,
+  forensicResponseDraft,
+  setForensicResponseDraft,
+  onRespondToClarification,
   onSwitchToAdmin,
   onReturnToDept,
   onSwitchUser,
@@ -1216,6 +1235,171 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                           )}
                         </div>
 
+                        {/* FORENSIC PORTAL: DEDICATED PROSECUTION CLARIFICATION REQUESTS SECTION */}
+                        {activeDept === 'FORENSIC' && (() => {
+                          const caseClarifications = reviews.filter(
+                            (r) => r.case_id === selectedCase.id && r.status === 'FURTHER_EVIDENCE_REQUESTED'
+                          );
+                          if (caseClarifications.length === 0) return null;
+
+                          return (
+                            <div
+                              style={{
+                                marginTop: '14px',
+                                background: '#111728',
+                                border: '1px solid #d97706',
+                                borderRadius: '6px',
+                                padding: '12px',
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  marginBottom: '10px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontSize: '13px', fontWeight: 600 }}>
+                                  <ShieldAlertIcon size={16} style={{ color: '#f59e0b', flexShrink: 0 }} />
+                                  <span>Judicial Clarification Notices from Public Prosecution ({caseClarifications.length})</span>
+                                </div>
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                  Section 65B Query Protocol
+                                </span>
+                              </div>
+
+                              {caseClarifications.map((rev) => {
+                                const isResponded = rev.clarification_status === 'RESPONDED';
+                                const draftText = forensicResponseDraft?.[rev.id] || '';
+
+                                return (
+                                  <div
+                                    key={rev.id}
+                                    style={{
+                                      background: '#0d121f',
+                                      border: `1px solid ${isResponded ? '#10b981' : '#f59e0b'}`,
+                                      borderRadius: '6px',
+                                      padding: '12px',
+                                      marginBottom: '10px',
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                                      <div style={{ fontSize: '12px', color: '#e2e8f0', fontWeight: 600 }}>
+                                        Request ID: {rev.id} • Target Report: {rev.report_id}
+                                      </div>
+                                      <span
+                                        style={{
+                                          fontSize: '10px',
+                                          fontWeight: 700,
+                                          padding: '2px 8px',
+                                          borderRadius: '10px',
+                                          background: isResponded ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)',
+                                          color: isResponded ? '#34d399' : '#fbbf24',
+                                          border: `1px solid ${isResponded ? '#059669' : '#d97706'}`,
+                                          textTransform: 'uppercase',
+                                        }}
+                                      >
+                                        {isResponded ? '✓ Clarified by Forensic Unit' : '⚠️ Action Required: Pending Forensic Response'}
+                                      </span>
+                                    </div>
+
+                                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                                      Requested by {rev.reviewer_id} on {new Date(rev.created_at).toLocaleString()}
+                                    </div>
+
+                                    <div
+                                      style={{
+                                        marginTop: '8px',
+                                        background: 'rgba(245, 158, 11, 0.08)',
+                                        borderLeft: '3px solid #f59e0b',
+                                        padding: '8px 10px',
+                                        color: '#fef3c7',
+                                        fontSize: '12px',
+                                        lineHeight: 1.4,
+                                      }}
+                                    >
+                                      <strong>Prosecution's Specific Inquiries / Questions:</strong>
+                                      <div style={{ marginTop: '4px' }}>{rev.review_notes}</div>
+                                    </div>
+
+                                    {isResponded ? (
+                                      <div
+                                        style={{
+                                          marginTop: '10px',
+                                          background: 'rgba(16, 185, 129, 0.08)',
+                                          borderLeft: '3px solid #10b981',
+                                          padding: '8px 10px',
+                                          color: '#d1fae5',
+                                          fontSize: '12px',
+                                          lineHeight: 1.4,
+                                        }}
+                                      >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#34d399', fontWeight: 600, fontSize: '11px', marginBottom: '4px' }}>
+                                          <span>Forensic Examiner Response Transmitted:</span>
+                                          <span>{new Date(rev.clarification_responded_at || rev.updated_at).toLocaleString()} • Examiner: {rev.clarification_responder_id}</span>
+                                        </div>
+                                        <div>{rev.clarification_response}</div>
+                                        {rev.resulting_report_id && (
+                                          <div style={{ marginTop: '4px', fontSize: '11px', color: '#38bdf8' }}>
+                                            Linked Amended Report Version: {rev.resulting_report_id}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div style={{ marginTop: '10px' }}>
+                                        {!isForensicRole && (
+                                          <div style={{ fontSize: '11px', color: '#f87171', marginBottom: '6px' }}>
+                                            🔒 Responding to judicial clarifications requires Forensic Examiner clearance (Current role: {currentUser.role}).
+                                          </div>
+                                        )}
+                                        <textarea
+                                          value={draftText}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (setForensicResponseDraft) {
+                                              setForensicResponseDraft((prev) => ({ ...prev, [rev.id]: val }));
+                                            }
+                                          }}
+                                          placeholder={
+                                            isForensicRole
+                                              ? "Enter formal CFSL technical clarification, tool methodology explanation, or examination findings..."
+                                              : "Unauthorized: Restricted to Forensic Examiner role."
+                                          }
+                                          className="ev-textarea"
+                                          rows={2}
+                                          disabled={!isForensicRole || isSubmittingReview}
+                                          style={{ fontSize: '12px' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                                          <button
+                                            type="button"
+                                            className="ev-btn ev-btn-primary"
+                                            style={{
+                                              fontSize: '11px',
+                                              padding: '5px 12px',
+                                              opacity: isForensicRole && draftText.trim() && !isSubmittingReview ? 1 : 0.45,
+                                              cursor: isForensicRole && draftText.trim() && !isSubmittingReview ? 'pointer' : 'not-allowed',
+                                            }}
+                                            disabled={!isForensicRole || !draftText.trim() || isSubmittingReview}
+                                            onClick={() => {
+                                              if (onRespondToClarification) {
+                                                onRespondToClarification(rev.id, draftText);
+                                              }
+                                            }}
+                                          >
+                                            Transmit Clarification Response to Prosecution
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+
                         {/* FORENSIC REPORT VERSIONS */}
                         <div style={{ marginTop: '14px', borderTop: '1px solid #21273e', paddingTop: '10px' }}>
                           <div
@@ -1369,10 +1553,10 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                   className="ev-btn ev-btn-success"
                                   style={{
                                     fontSize: '12px',
-                                    opacity: isProsecutionRole ? 1 : 0.45,
-                                    cursor: isProsecutionRole ? 'pointer' : 'not-allowed',
+                                    opacity: isProsecutionRole && !isSubmittingReview ? 1 : 0.45,
+                                    cursor: isProsecutionRole && !isSubmittingReview ? 'pointer' : 'not-allowed',
                                   }}
-                                  disabled={!isProsecutionRole}
+                                  disabled={!isProsecutionRole || isSubmittingReview}
                                   onClick={() => onProsecutionDecision('ACCEPTED_FOR_TRIAL', evReports[0].id)}
                                 >
                                   Accept for Trial Presentation
@@ -1382,10 +1566,10 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                   className="ev-btn ev-btn-warning"
                                   style={{
                                     fontSize: '12px',
-                                    opacity: isProsecutionRole ? 1 : 0.45,
-                                    cursor: isProsecutionRole ? 'pointer' : 'not-allowed',
+                                    opacity: isProsecutionRole && !isSubmittingReview ? 1 : 0.45,
+                                    cursor: isProsecutionRole && !isSubmittingReview ? 'pointer' : 'not-allowed',
                                   }}
-                                  disabled={!isProsecutionRole}
+                                  disabled={!isProsecutionRole || isSubmittingReview}
                                   onClick={() =>
                                     onProsecutionDecision('FURTHER_EVIDENCE_REQUESTED', evReports[0].id)
                                   }
@@ -1393,6 +1577,212 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                                   Request Clarification
                                 </button>
                               </div>
+
+                              {/* Validation Message */}
+                              {clarificationValidationError && (
+                                <div
+                                  style={{
+                                    marginTop: '10px',
+                                    padding: '8px 12px',
+                                    background: 'rgba(239, 68, 68, 0.15)',
+                                    border: '1px solid #ef4444',
+                                    borderRadius: '4px',
+                                    color: '#fca5a5',
+                                    fontSize: '11.5px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                  }}
+                                >
+                                  <ShieldAlertIcon size={14} style={{ color: '#ef4444', flexShrink: 0 }} />
+                                  <span>{clarificationValidationError}</span>
+                                </div>
+                              )}
+
+                              {/* Confirmation / Success / Error Feedback */}
+                              {clarificationFeedback && (
+                                <div
+                                  style={{
+                                    marginTop: '10px',
+                                    padding: '8px 12px',
+                                    background:
+                                      clarificationFeedback.type === 'success'
+                                        ? 'rgba(16, 185, 129, 0.15)'
+                                        : 'rgba(239, 68, 68, 0.15)',
+                                    border: `1px solid ${
+                                      clarificationFeedback.type === 'success' ? '#10b981' : '#ef4444'
+                                    }`,
+                                    borderRadius: '4px',
+                                    color: clarificationFeedback.type === 'success' ? '#6ee7b7' : '#fca5a5',
+                                    fontSize: '11.5px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '8px',
+                                  }}
+                                >
+                                  <span>{clarificationFeedback.message}</span>
+                                  {setClarificationFeedback && (
+                                    <button
+                                      type="button"
+                                      onClick={() => setClarificationFeedback(null)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'inherit',
+                                        cursor: 'pointer',
+                                        fontSize: '13px',
+                                      }}
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Evidence-Specific Clarification Thread History */}
+                              {(() => {
+                                const evClarifications = reviews.filter(
+                                  (r) =>
+                                    r.case_id === selectedCase.id &&
+                                    r.report_id === evReports[0].id &&
+                                    r.status === 'FURTHER_EVIDENCE_REQUESTED'
+                                );
+                                if (evClarifications.length === 0) return null;
+
+                                return (
+                                  <div
+                                    style={{
+                                      marginTop: '14px',
+                                      borderTop: '1px solid #2d3558',
+                                      paddingTop: '10px',
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: '11px',
+                                        fontWeight: 700,
+                                        color: '#fbbf24',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.04em',
+                                        marginBottom: '8px',
+                                      }}
+                                    >
+                                      Clarification Inquiry Thread ({evClarifications.length})
+                                    </div>
+
+                                    {evClarifications.map((cl) => {
+                                      const isAnswered = cl.clarification_status === 'RESPONDED';
+
+                                      return (
+                                        <div
+                                          key={cl.id}
+                                          style={{
+                                            background: '#0d121f',
+                                            border: `1px solid ${isAnswered ? '#10b981' : '#f59e0b'}`,
+                                            borderRadius: '4px',
+                                            padding: '10px',
+                                            marginBottom: '8px',
+                                            fontSize: '11.5px',
+                                          }}
+                                        >
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              justifyContent: 'space-between',
+                                              color: '#e2e8f0',
+                                            }}
+                                          >
+                                            <span style={{ fontWeight: 600 }}>
+                                              Prosecution Request ({cl.id}):
+                                            </span>
+                                            <span
+                                              style={{
+                                                fontSize: '10px',
+                                                padding: '1px 6px',
+                                                borderRadius: '8px',
+                                                background: isAnswered
+                                                  ? 'rgba(16, 185, 129, 0.2)'
+                                                  : 'rgba(245, 158, 11, 0.2)',
+                                                color: isAnswered ? '#34d399' : '#fbbf24',
+                                                border: `1px solid ${
+                                                  isAnswered ? '#059669' : '#d97706'
+                                                }`,
+                                              }}
+                                            >
+                                              {isAnswered
+                                                ? '✓ Clarified by Forensic Unit'
+                                                : '⏳ Awaiting Forensic Response'}
+                                            </span>
+                                          </div>
+                                          <div style={{ color: '#cbd5e1', marginTop: '4px' }}>
+                                            {cl.review_notes}
+                                          </div>
+
+                                          {isAnswered && (
+                                            <div
+                                              style={{
+                                                marginTop: '8px',
+                                                background: 'rgba(16, 185, 129, 0.08)',
+                                                borderLeft: '3px solid #10b981',
+                                                padding: '8px',
+                                                borderRadius: '2px',
+                                                color: '#d1fae5',
+                                              }}
+                                            >
+                                              <div
+                                                style={{
+                                                  display: 'flex',
+                                                  justifyContent: 'space-between',
+                                                  color: '#34d399',
+                                                  fontWeight: 600,
+                                                  fontSize: '11px',
+                                                  marginBottom: '3px',
+                                                }}
+                                              >
+                                                <span>CFSL Forensic Examiner Response:</span>
+                                                <span>
+                                                  {new Date(
+                                                    cl.clarification_responded_at || cl.updated_at
+                                                  ).toLocaleTimeString()} • {cl.clarification_responder_id}
+                                                </span>
+                                              </div>
+                                              <div>{cl.clarification_response}</div>
+                                              {cl.resulting_report_id && (
+                                                <div
+                                                  style={{
+                                                    marginTop: '4px',
+                                                    fontSize: '10.5px',
+                                                    color: '#38bdf8',
+                                                  }}
+                                                >
+                                                  Linked Amended Report Version: {cl.resulting_report_id}
+                                                </div>
+                                              )}
+
+                                              <div style={{ marginTop: '8px' }}>
+                                                <button
+                                                  type="button"
+                                                  className="ev-btn ev-btn-success"
+                                                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
+                                                  onClick={() =>
+                                                    onProsecutionDecision(
+                                                      'ACCEPTED_FOR_TRIAL',
+                                                      evReports[0].id
+                                                    )
+                                                  }
+                                                >
+                                                  Accept for Trial Presentation (Post-Clarification)
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
@@ -1481,6 +1871,27 @@ export const EvidenceWorkspace: React.FC<EvidenceWorkspaceProps> = ({
                             </span>
                           </div>
                           <div style={{ marginTop: '4px', color: '#94a3b8' }}>{rev.review_notes}</div>
+                          {rev.clarification_status === 'RESPONDED' && rev.clarification_response && (
+                            <div
+                              style={{
+                                marginTop: '8px',
+                                background: 'rgba(16, 185, 129, 0.08)',
+                                borderLeft: '3px solid #10b981',
+                                padding: '6px 10px',
+                                borderRadius: '2px',
+                                fontSize: '11.5px',
+                                color: '#d1fae5',
+                              }}
+                            >
+                              <div style={{ color: '#34d399', fontWeight: 600, fontSize: '11px', marginBottom: '2px' }}>
+                                CFSL Forensic Examiner Response:
+                              </div>
+                              <div>{rev.clarification_response}</div>
+                              <div style={{ fontSize: '10.5px', color: '#6ee7b7', marginTop: '2px' }}>
+                                Responded by {rev.clarification_responder_id || 'Dr. Marcus Vance'} on {new Date(rev.clarification_responded_at || rev.updated_at).toLocaleString()}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                   </div>

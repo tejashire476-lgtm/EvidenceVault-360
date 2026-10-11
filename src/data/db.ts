@@ -1238,10 +1238,14 @@ export class EvidenceVaultDatabase {
     if (!this.reports.has(reviewData.report_id)) {
       throw new ForeignKeyConstraintError('ProsecutionReview', 'report_id', reviewData.report_id);
     }
+    if (reviewData.status === 'FURTHER_EVIDENCE_REQUESTED' && (!reviewData.review_notes || !reviewData.review_notes.trim())) {
+      throw new DatabaseIntegrityError('Clarification notes are required when requesting further forensic evidence or clarification.');
+    }
 
     const timestamp = new Date().toISOString();
     const review: ProsecutionReview = {
       ...reviewData,
+      clarification_status: reviewData.status === 'FURTHER_EVIDENCE_REQUESTED' ? 'PENDING' : undefined,
       created_at: timestamp,
       updated_at: timestamp,
     };
@@ -1250,14 +1254,91 @@ export class EvidenceVaultDatabase {
 
     await this.recordAuditEvent(
       review.reviewer_id,
-      'RECORD_PROSECUTION_REVIEW',
+      review.status === 'FURTHER_EVIDENCE_REQUESTED' ? 'SUBMIT_CLARIFICATION_REQUEST' : 'RECORD_PROSECUTION_REVIEW',
       'ProsecutionReview',
       review.id,
-      { case_id: review.case_id, report_id: review.report_id, status: review.status }
+      {
+        case_id: review.case_id,
+        report_id: review.report_id,
+        status: review.status,
+        review_notes: review.review_notes,
+        clarification_status: review.clarification_status,
+      }
     );
 
     this.notify();
     return review;
+  }
+
+  public async respondToClarificationRequest(
+    reviewId: string,
+    responseNotes: string,
+    responderId: string,
+    amendedReportContent?: string
+  ): Promise<{ review: ProsecutionReview; amendedReport?: ForensicReport }> {
+    this.checkPermission(responderId, 'RESPOND_TO_CLARIFICATION', ['FORENSIC_EXAMINER']);
+
+    const review = this.prosecutionReviews.get(reviewId);
+    if (!review) {
+      throw new DatabaseIntegrityError(`Clarification review record '${reviewId}' not found.`);
+    }
+    if (review.status !== 'FURTHER_EVIDENCE_REQUESTED') {
+      throw new DatabaseIntegrityError(`Review '${reviewId}' is not an active clarification request.`);
+    }
+    if (!responseNotes || !responseNotes.trim()) {
+      throw new DatabaseIntegrityError('Forensic clarification response notes cannot be empty.');
+    }
+
+    const timestamp = new Date().toISOString();
+    let amendedReport: ForensicReport | undefined;
+
+    // Optional: commit a new immutable forensic report revision if examiner included amended findings
+    if (amendedReportContent && amendedReportContent.trim()) {
+      const existingReport = this.reports.get(review.report_id);
+      if (existingReport) {
+        amendedReport = await this.createOrReviseReport({
+          case_id: existingReport.case_id,
+          evidence_id: existingReport.evidence_id,
+          report_content: amendedReportContent.trim(),
+          author_id: responderId,
+          status: 'AMENDED',
+        });
+      }
+    }
+
+    const updatedReview: ProsecutionReview = {
+      ...review,
+      clarification_status: 'RESPONDED',
+      clarification_response: responseNotes.trim(),
+      clarification_responder_id: responderId,
+      clarification_responded_at: timestamp,
+      resulting_report_id: amendedReport?.id,
+      updated_at: timestamp,
+    };
+
+    this.prosecutionReviews.set(reviewId, updatedReview);
+
+    await this.recordAuditEvent(
+      responderId,
+      'RESPOND_CLARIFICATION_REQUEST',
+      'ProsecutionReview',
+      reviewId,
+      {
+        case_id: review.case_id,
+        report_id: review.report_id,
+        response_notes: responseNotes.trim(),
+        resulting_report_id: amendedReport?.id,
+      }
+    );
+
+    this.notify();
+    return { review: updatedReview, amendedReport };
+  }
+
+  public getClarificationRequests(caseId?: string): ProsecutionReview[] {
+    return Array.from(this.prosecutionReviews.values()).filter(
+      (p) => p.status === 'FURTHER_EVIDENCE_REQUESTED' && (!caseId || p.case_id === caseId)
+    );
   }
 
   // --------------------------------------------------------------------------
