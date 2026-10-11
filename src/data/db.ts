@@ -1388,6 +1388,10 @@ export class EvidenceVaultDatabase {
     return Array.from(this.prosecutionReviews.values()).filter((p) => p.case_id === caseId);
   }
 
+  public getProsecutionReview(reviewId: string): ProsecutionReview | undefined {
+    return this.prosecutionReviews.get(reviewId);
+  }
+
   public getAllProsecutionReviews(): ProsecutionReview[] {
     return Array.from(this.prosecutionReviews.values());
   }

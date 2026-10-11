@@ -42,7 +42,7 @@ export interface CyberDashboardProps {
   onOpenRegisterEvidenceModal: () => void;
   onOpenCaseIndex: () => void;
   onOpenOfflineCenter: () => void;
-  onNavigateTab: (tab: 'DASHBOARD' | 'EVIDENCE' | 'CASES' | 'FORENSICS' | 'REPORTS' | 'CUSTODY' | 'USERS' | 'SETTINGS') => void;
+  onNavigateTab: (tab: 'DASHBOARD' | 'PORTAL' | 'EVIDENCE' | 'CASES' | 'FORENSICS' | 'REPORTS' | 'CUSTODY' | 'USERS' | 'SETTINGS') => void;
   onSwitchUser?: (session: AuthenticatedSession) => void;
   onLogout: () => void;
 }
@@ -180,6 +180,23 @@ export const CyberDashboard: React.FC<CyberDashboardProps> = ({
 
         {/* Sidebar Navigation Items */}
         <nav className="ev-cyber-nav">
+          <button
+            type="button"
+            className="ev-cyber-nav-item"
+            onClick={() => onNavigateTab('PORTAL')}
+            style={{
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              color: '#38bdf8',
+              fontWeight: 600,
+              marginBottom: '6px',
+            }}
+            title={`Return to ${currentUser.department} Department Workspace`}
+          >
+            <ArrowRightIcon size={18} style={{ transform: 'rotate(180deg)' }} />
+            <span>← My {currentUser.department} Portal</span>
+          </button>
+
           <button
             type="button"
             className={`ev-cyber-nav-item ${activeSidebarItem === 'DASHBOARD' ? 'active' : ''}`}

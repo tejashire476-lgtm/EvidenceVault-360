@@ -29,7 +29,6 @@ import {
 import {
   globalBiometricEngine,
   BIOMETRIC_MATCH_THRESHOLD,
-  computeCosineSimilarity,
 } from '../../utils/biometric.ts';
 
 test('Unified Face Auth — Test 1: Police Portal accepts authorized Police badge and rejects cross-department accounts', async () => {

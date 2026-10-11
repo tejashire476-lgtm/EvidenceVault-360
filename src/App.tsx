@@ -7,6 +7,9 @@ import { LandingPage } from './components/LandingPage.tsx';
 import { WorkspaceHeader } from './components/WorkspaceHeader.tsx';
 import { EvidenceWorkspace } from './components/EvidenceWorkspace.tsx';
 import { CyberDashboard } from './components/CyberDashboard.tsx';
+import { PolicePortal } from './components/portals/PolicePortal.tsx';
+import { ForensicPortal } from './components/portals/ForensicPortal.tsx';
+import { ProsecutionPortal } from './components/portals/ProsecutionPortal.tsx';
 import { CreateCaseModal } from './components/modals/CreateCaseModal.tsx';
 import { RegisterEvidenceModal } from './components/modals/RegisterEvidenceModal.tsx';
 import { RejectTransferModal } from './components/modals/RejectTransferModal.tsx';
@@ -74,6 +77,7 @@ export default function App() {
           onProceedToWorkspace={(user) => {
             v.setCurrentUser(user);
             v.setActiveDept(user.department);
+            v.setActiveNavTab('PORTAL');
             v.setShowBiometricScanModal(false);
           }}
         />
@@ -99,37 +103,40 @@ export default function App() {
           onNavigateTab={(tab) => {
             if (tab === 'DASHBOARD') {
               v.setActiveNavTab('DASHBOARD');
+            } else if (tab === 'PORTAL') {
+              v.setActiveNavTab('PORTAL');
             } else if (tab === 'EVIDENCE') {
-              v.setActiveNavTab('EVIDENCE');
+              v.setActiveNavTab('PORTAL');
               v.setActiveDept('POLICE');
               v.setShowRegisterEvidenceModal(true);
             } else if (tab === 'CASES') {
-              v.setActiveNavTab('CASES');
+              v.setActiveNavTab('PORTAL');
               v.setActiveDept('POLICE');
             } else if (tab === 'FORENSICS') {
-              v.setActiveNavTab('FORENSICS');
+              v.setActiveNavTab('PORTAL');
               v.setActiveDept('FORENSIC');
             } else if (tab === 'REPORTS') {
-              v.setActiveNavTab('REPORTS');
+              v.setActiveNavTab('PORTAL');
               v.setActiveDept('PROSECUTION');
             } else if (tab === 'CUSTODY') {
-              v.setActiveNavTab('CUSTODY');
+              v.setActiveNavTab('PORTAL');
               v.setShowAuditDashboardModal(true);
             } else if (tab === 'USERS') {
-              v.setActiveNavTab('USERS');
+              v.setActiveNavTab('PORTAL');
               v.setActiveDept('ADMINISTRATION');
             } else if (tab === 'SETTINGS') {
-              v.setActiveNavTab('SETTINGS');
+              v.setActiveNavTab('PORTAL');
               v.setShowOfflineCenterModal(true);
             }
           }}
           onSwitchUser={(session) => {
             v.setCurrentUser(session);
             v.setActiveDept(session.department);
+            v.setActiveNavTab('PORTAL');
           }}
           onLogout={() => {
             v.setCurrentUser(null);
-            v.setActiveNavTab('DASHBOARD');
+            v.setActiveNavTab('PORTAL');
           }}
         />
       ) : v.currentUser.role === 'SYSTEM_ADMIN' && v.activeDept === 'ADMINISTRATION' ? (
@@ -144,12 +151,92 @@ export default function App() {
           reviews={v.reviews}
           onLogout={() => {
             v.setCurrentUser(null);
-            v.setActiveNavTab('DASHBOARD');
+            v.setActiveNavTab('PORTAL');
           }}
           onSwitchDepartment={(dept) => {
             v.setCurrentUser(DEPARTMENT_PRESETS[dept]);
             v.setActiveDept(dept);
+            v.setActiveNavTab('PORTAL');
           }}
+        />
+      ) : v.currentUser.department === 'POLICE' ? (
+        <PolicePortal
+          currentUser={v.currentUser}
+          cases={v.cases}
+          evidence={v.evidence}
+          handoffs={v.handoffs}
+          selectedCaseId={v.selectedCaseId}
+          setSelectedCaseId={v.setSelectedCaseId}
+          onOpenCreateCaseModal={() => v.setShowCreateCaseModal(true)}
+          onOpenRegisterEvidenceModal={() => v.setShowRegisterEvidenceModal(true)}
+          onOpenCaseIndex={v.handleOpenCaseIndex}
+          onSubmitToForensics={v.handleSubmitToForensics}
+          onLogout={() => {
+            v.setCurrentUser(null);
+            v.setActiveNavTab('PORTAL');
+          }}
+          onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+          onOpenCyberDashboard={() => v.setActiveNavTab('DASHBOARD')}
+        />
+      ) : v.currentUser.department === 'FORENSIC' ? (
+        <ForensicPortal
+          currentUser={v.currentUser}
+          cases={v.cases}
+          evidence={v.evidence}
+          handoffs={v.handoffs}
+          reports={v.reports}
+          reviews={v.reviews}
+          selectedCaseId={v.selectedCaseId}
+          setSelectedCaseId={v.setSelectedCaseId}
+          verifyingFileId={v.verifyingFileId}
+          onRunVerification={v.handleRunVerification}
+          onSimulateTamper={v.handleSimulateTamper}
+          onRestorePristine={v.handleRestorePristine}
+          onViewHistory={(id) => v.setViewingHistoryFileVersionId(id)}
+          onDownloadArtifact={v.handleDownloadArtifact}
+          onAcceptTransfer={v.handleAcceptTransfer}
+          onRejectTransfer={(data) => v.setRejectModalData(data)}
+          onStartExam={v.handleStartExam}
+          onMarkReportReady={v.handleMarkReportReady}
+          newFindingText={v.newFindingText}
+          setNewFindingText={v.setNewFindingText}
+          onAddReportVersion={v.handleAddReportVersion}
+          forensicResponseDraft={v.forensicResponseDraft}
+          setForensicResponseDraft={v.setForensicResponseDraft}
+          onRespondToClarification={v.handleRespondToClarification}
+          isSubmittingReview={v.isSubmittingReview}
+          onOpenCaseIndex={v.handleOpenCaseIndex}
+          onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+          onLogout={() => {
+            v.setCurrentUser(null);
+            v.setActiveNavTab('PORTAL');
+          }}
+          onOpenCyberDashboard={() => v.setActiveNavTab('DASHBOARD')}
+        />
+      ) : v.currentUser.department === 'PROSECUTION' ? (
+        <ProsecutionPortal
+          currentUser={v.currentUser}
+          cases={v.cases}
+          evidence={v.evidence}
+          reports={v.reports}
+          reviews={v.reviews}
+          selectedCaseId={v.selectedCaseId}
+          setSelectedCaseId={v.setSelectedCaseId}
+          prosecutionNotes={v.prosecutionNotes}
+          setProsecutionNotes={v.setProsecutionNotes}
+          onProsecutionDecision={v.handleProsecutionDecision}
+          clarificationValidationError={v.clarificationValidationError}
+          setClarificationValidationError={v.setClarificationValidationError}
+          clarificationFeedback={v.clarificationFeedback}
+          setClarificationFeedback={v.setClarificationFeedback}
+          isSubmittingReview={v.isSubmittingReview}
+          onOpenCaseIndex={v.handleOpenCaseIndex}
+          onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+          onLogout={() => {
+            v.setCurrentUser(null);
+            v.setActiveNavTab('PORTAL');
+          }}
+          onOpenCyberDashboard={() => v.setActiveNavTab('DASHBOARD')}
         />
       ) : (
         <>

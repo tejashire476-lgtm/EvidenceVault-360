@@ -346,6 +346,29 @@ export const BiometricScanModal: React.FC<BiometricScanModalProps> = ({
             </button>
           </div>
 
+          {/* Statutory Scope Limitation Notice */}
+          <div
+            style={{
+              padding: '8px 12px',
+              background: 'rgba(30, 41, 59, 0.7)',
+              border: '1px solid #334155',
+              borderRadius: '6px',
+              fontSize: '11px',
+              color: '#94a3b8',
+              marginBottom: '12px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '8px',
+            }}
+          >
+            <ShieldCheckIcon size={16} className="text-cyan" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong style={{ color: '#cbd5e1' }}>Verification Mechanism &amp; Scope Limitation:</strong>{' '}
+              Local client-side presentation challenge &amp; mathematical 128D embedding comparison.
+              This mechanism provides application-level step-up verification and does NOT constitute official government statutory identity verification or UIDAI/Aadhaar authentication under Section 29 of the Aadhaar Act or DPDPA 2023.
+            </div>
+          </div>
+
           {/* Camera Viewport & Live Stream */}
           <div
             className="ev-biometric-scanner-viewport"

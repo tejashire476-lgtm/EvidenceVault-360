@@ -114,7 +114,15 @@ export const CaseEvidenceIndexModal: React.FC<CaseEvidenceIndexModalProps> = ({
           </div>
         ))}
 
-        <div className="ev-form-actions">
+        <div className="ev-form-actions" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            className="ev-btn ev-btn-secondary"
+            onClick={() => window.print()}
+            style={{ borderColor: '#38bdf8', color: '#38bdf8' }}
+          >
+            🖨️ Print / Save Section 65B PDF
+          </button>
           <button
             type="button"
             className="ev-btn ev-btn-primary"

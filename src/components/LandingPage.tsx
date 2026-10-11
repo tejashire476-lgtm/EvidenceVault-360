@@ -52,6 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   loginError,
 }) => {
   const [currentTimestamp, setCurrentTimestamp] = useState<string>('');
+  const [infoModalContent, setInfoModalContent] = useState<{ title: string; body: string } | null>(null);
 
   useEffect(() => {
     const updateTime = () => {
@@ -79,13 +80,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       {/* Top Institutional Sovereign Authority Bar */}
       <div className="ev-gov-sovereign-bar">
         <div className="ev-gov-sovereign-content">
-          <div className="ev-gov-flag-emblem">
-            <span className="ev-flag-strip orange" />
-            <span className="ev-flag-strip white" />
-            <span className="ev-flag-strip green" />
+          <div className="ev-gov-flag-emblem" style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', borderRadius: '4px', padding: '2px 6px' }}>
+            <ShieldCheckIcon size={14} className="text-cyan" />
           </div>
           <span className="ev-gov-org-title">
-            GOVERNMENT OF INDIA • MINISTRY OF HOME AFFAIRS • INTER-AGENCY DIGITAL FORENSICS CLOUD
+            EVIDENCEVAULT 360 • INTER-AGENCY DIGITAL FORENSICS &amp; CUSTODY ASSURANCE SYSTEM
           </span>
           <div className="ev-gov-live-clock">
             <ClockIcon size={12} />
@@ -103,10 +102,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="ev-portal-brand-text">
             <h2>
               EVIDENCEVAULT 360
-              <span className="ev-portal-accred-badge">FIPS 180-4 • ISO/IEC 27037 GRADE A+</span>
+              <span className="ev-portal-accred-badge">SHA-256 BITSTREAM SEALED • SECTION 65B (BSA 63) WORKFLOW</span>
             </h2>
             <div className="ev-portal-brand-sub">
-              National Digital Evidence Management & Cryptographic Chain of Custody System
+              Digital Evidence Management &amp; Forensic Case Coordination System
             </div>
           </div>
         </div>
@@ -151,9 +150,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button
             type="button"
             className="ev-portal-nav-item"
-            onClick={() => alert('BSA 2023 / Section 65B: Electronic records require cryptographically verified SHA-256 hash certificates for courtroom admissibility.')}
+            onClick={() => setInfoModalContent({
+              title: 'Bharatiya Sakshya Adhiniyam, 2023 (BSA Section 63) & Section 65B Workflow',
+              body: 'Under the Bharatiya Sakshya Adhiniyam (BSA) Section 63 and erstwhile Indian Evidence Act Section 65B, electronic records submitted in court must be accompanied by a verifiable certificate. EvidenceVault 360 computes bitstream SHA-256 hashes upon seizure and preserves an unbroken, tamper-evident cryptographic ledger throughout police handling, forensic examination, and prosecution submission.'
+            })}
           >
-            BNS 65B Certified
+            BSA 63 / 65B Workflow
           </button>
           <button
             type="button"
@@ -527,11 +529,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           © 2026-27 EvidenceVault 360 - National Digital Evidence Management & Cryptographic Chain of Custody System.
         </div>
         <div className="ev-portal-legal-links">
-          <a href="#privacy" onClick={(e) => { e.preventDefault(); alert('EvidenceVault 360 Privacy Policy: Zero unauthorized telemetry. Zero persistent data leakage. 100% local cryptographic operations.'); }}>Privacy Policy</a>
+          <a
+            href="#privacy"
+            onClick={(e) => {
+              e.preventDefault();
+              setInfoModalContent({
+                title: 'Data Privacy & Protection Policy (DPDPA 2023)',
+                body: 'EvidenceVault 360 operates with zero third-party telemetry, zero unauthorized cloud data leakage, and local mathematical representations. Biometric face verifications evaluate transient 128-dimensional vectors with affirmative consent, strictly prohibiting unencrypted storage of raw facial photography under the Digital Personal Data Protection Act, 2023.'
+              });
+            }}
+          >
+            Privacy Policy
+          </a>
           <span>|</span>
-          <a href="#terms" onClick={(e) => { e.preventDefault(); alert('Terms of Service: Authorized Law Enforcement, Forensic Science & Judicial personnel only.'); }}>Terms and Conditions</a>
+          <a
+            href="#terms"
+            onClick={(e) => {
+              e.preventDefault();
+              setInfoModalContent({
+                title: 'Terms of Use & Authorized Agency Clearance',
+                body: 'Access to EvidenceVault 360 is restricted to verified law enforcement, recognized forensic laboratories, and authorized public prosecution officers. Unregistered access attempts, token tampering, or chain-of-custody alteration generate cryptographic incident logs subject to statutory audit under the Information Technology Act, 2000.'
+              });
+            }}
+          >
+            Terms of Use
+          </a>
           <span>|</span>
-          <a href="#security" onClick={(e) => { e.preventDefault(); alert('Security: AES-256-GCM at rest, TLS 1.3 in transit, NIST FIPS 180-4 bitstream verification.'); }}>Security Disclosures</a>
+          <a
+            href="#security"
+            onClick={(e) => {
+              e.preventDefault();
+              setInfoModalContent({
+                title: 'Cryptographic Architecture & Security Disclosures',
+                body: 'EvidenceVault 360 implements NIST FIPS 180-4 compliant SHA-256 bitstream cryptographic hashing upon evidence registration. Every lifecycle event (seizure, transfer, verification, and examination) is appended to an immutable Merkle-style audit ledger with HMAC-SHA256 signature enforcement.'
+              });
+            }}
+          >
+            Security Disclosures
+          </a>
         </div>
       </footer>
 
@@ -761,6 +796,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 }}
               >
                 Launch Police Demonstration Portal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Institutional Information Modal */}
+      {infoModalContent && (
+        <div
+          className="ev-login-modal-overlay"
+          onClick={() => setInfoModalContent(null)}
+        >
+          <div
+            className="ev-login-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="ev-login-modal-header police">
+              <div>
+                <h3 style={{ fontSize: '15px', color: '#f8fafc', fontWeight: 600 }}>{infoModalContent.title}</h3>
+                <p style={{ fontSize: '11px', color: '#38bdf8', margin: '2px 0 0 0' }}>Institutional Disclosure &amp; Legal Framework</p>
+              </div>
+              <button
+                type="button"
+                className="ev-login-modal-close"
+                onClick={() => setInfoModalContent(null)}
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
+            <div className="ev-login-modal-body" style={{ padding: '16px' }}>
+              <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6, margin: 0 }}>
+                {infoModalContent.body}
+              </p>
+            </div>
+            <div className="ev-login-modal-footer">
+              <button
+                type="button"
+                className="ev-login-submit-btn"
+                onClick={() => setInfoModalContent(null)}
+              >
+                Acknowledge &amp; Close
               </button>
             </div>
           </div>
