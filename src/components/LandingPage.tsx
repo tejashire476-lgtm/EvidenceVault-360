@@ -30,6 +30,7 @@ export interface LandingPageProps {
   onOpenAdmin: () => void;
   showFaqModal: boolean;
   setShowFaqModal: (v: boolean) => void;
+  loginError?: string | null;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -48,6 +49,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenAdmin,
   showFaqModal,
   setShowFaqModal,
+  loginError,
 }) => {
   const [currentTimestamp, setCurrentTimestamp] = useState<string>('');
 
@@ -584,6 +586,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             <div className="ev-login-modal-body">
+              {loginError && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid #ef4444',
+                    borderRadius: '8px',
+                    color: '#f87171',
+                    fontSize: '12px',
+                    lineHeight: 1.4,
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                  }}
+                >
+                  <AlertTriangleIcon size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: '2px' }}>Authentication Alert</strong>
+                    <span>{loginError}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="ev-login-input-group">
                 <label>Official Service Badge / Department ID</label>
                 <input

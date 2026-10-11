@@ -948,3 +948,11 @@ export const DEPARTMENT_PRESETS: Record<Department, AuthenticatedSession> = {
     badge: 'DIR-NAT-SECURITY-001',
   },
 };
+
+export const DEFAULT_ADMIN_USER: AuthenticatedSession = {
+  user_id: 'USR-ADMIN-TEJAS',
+  name: 'Tejas',
+  role: 'SYSTEM_ADMIN',
+  department: 'ADMINISTRATION',
+  badge: 'EV-ADMIN-360',
+};

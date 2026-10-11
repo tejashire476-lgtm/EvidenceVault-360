@@ -14,7 +14,9 @@ import type {
   SecurityViolationType,
   SecurityAuditLogEntry,
   UserActiveStatus,
+  AuthenticatedSession,
 } from '../types.ts';
+import { DEPARTMENT_PRESETS } from '../types.ts';
 import type { EvidenceVaultDatabase } from '../data/db.ts';
 
 // ----------------------------------------------------------------------------
@@ -87,6 +89,24 @@ export class AdminAccessDeniedError extends SecurityViolationError {
     this.name = 'AdminAccessDeniedError';
   }
 }
+
+export class DepartmentMismatchError extends SecurityViolationError {
+  constructor(department: Department, actualRole: UserRole, userId: string) {
+    super(
+      `Department Authorization Violation: User '${userId}' with role '${actualRole}' is not authorized to access the ${department} Portal.`,
+      'UNAUTHORIZED_ROLE_ACTION',
+      `PORTAL_${department}`
+    );
+    this.name = 'DepartmentMismatchError';
+  }
+}
+
+export const DEPARTMENT_REQUIRED_ROLES: Record<Department, UserRole> = {
+  POLICE: 'POLICE_INVESTIGATOR',
+  FORENSIC: 'FORENSIC_EXAMINER',
+  PROSECUTION: 'PUBLIC_PROSECUTOR',
+  ADMINISTRATION: 'SYSTEM_ADMIN',
+};
 
 // ----------------------------------------------------------------------------
 // Configuration & Environment Secrets
@@ -256,6 +276,176 @@ export function validateAuthSession(session: AuthSession): { isValid: boolean; e
   }
 
   return { isValid: true };
+}
+
+export interface DepartmentAuthParams {
+  department: Department;
+  badge: string;
+  passcode: string;
+  isDemo?: boolean;
+}
+
+export interface DepartmentAuthOutcome {
+  success: boolean;
+  session?: AuthSession;
+  user?: AuthenticatedSession;
+  error?: string;
+  errorCode?: 'INVALID_CREDENTIALS' | 'DEPARTMENT_ACCESS_DENIED' | 'USER_SUSPENDED' | 'RATE_LIMITED' | 'DEMO_RESTRICTED';
+}
+
+/**
+ * Shared backend authentication and department authorization validator.
+ * Validates credentials, checks brute-force rate limits, verifies affirmative account status,
+ * strictly enforces departmental role segregation, and produces HMAC-signed sessions.
+ */
+export async function authenticateDepartmentPortal(
+  params: DepartmentAuthParams,
+  db?: EvidenceVaultDatabase
+): Promise<DepartmentAuthOutcome> {
+  const { department, badge, passcode, isDemo } = params;
+  const identifier = badge.trim() || `UNKNOWN-${department}`;
+
+  // 1. Brute-force Rate Limiting Check
+  const rateLimit = globalRateLimiter.checkAuthRateLimit(identifier);
+  if (!rateLimit.allowed) {
+    if (db) {
+      await logSecurityViolation(
+        {
+          actorId: identifier,
+          actorRole: 'UNAUTHENTICATED',
+          violationType: 'RATE_LIMIT_EXCEEDED',
+          resource: `PORTAL_${department}`,
+          attemptedAction: 'DEPARTMENT_PORTAL_LOGIN',
+          reason: `Rate limit lockout active. Retry in ${rateLimit.retryAfterSec}s.`,
+        },
+        db
+      );
+    }
+    return {
+      success: false,
+      error: `Rate limit exceeded. Please wait ${rateLimit.retryAfterSec || 60} seconds before retrying.`,
+      errorCode: 'RATE_LIMITED',
+    };
+  }
+
+  // 2. Resolve target user based on badge, ID, or department preset
+  const cleanBadge = badge.trim();
+  let matchedPreset = Object.values(DEPARTMENT_PRESETS).find(
+    (p) =>
+      p.badge.toLowerCase() === cleanBadge.toLowerCase() ||
+      p.user_id.toLowerCase() === cleanBadge.toLowerCase()
+  );
+
+  // If badge is empty or matches default for this portal
+  if (!matchedPreset && (!cleanBadge || cleanBadge === DEPARTMENT_PRESETS[department].badge)) {
+    matchedPreset = DEPARTMENT_PRESETS[department];
+  }
+
+  // If user entered a badge that doesn't exist
+  if (!matchedPreset) {
+    globalRateLimiter.recordAuthFailure(identifier);
+    if (db) {
+      await logSecurityViolation(
+        {
+          actorId: identifier,
+          actorRole: 'UNAUTHENTICATED',
+          violationType: 'AUTHENTICATION_FAILURE',
+          resource: `PORTAL_${department}`,
+          attemptedAction: 'DEPARTMENT_PORTAL_LOGIN',
+          reason: `Service badge '${cleanBadge}' not found in personnel directory.`,
+        },
+        db
+      );
+    }
+    return {
+      success: false,
+      error: `Official badge '${cleanBadge}' not recognized in personnel records.`,
+      errorCode: 'INVALID_CREDENTIALS',
+    };
+  }
+
+  // 3. Department Authorization Validation (Never trust frontend labels)
+  const expectedRole = DEPARTMENT_REQUIRED_ROLES[department];
+  if (matchedPreset.role !== expectedRole) {
+    globalRateLimiter.recordAuthFailure(identifier);
+    if (db) {
+      await logSecurityViolation(
+        {
+          actorId: matchedPreset.user_id,
+          actorRole: matchedPreset.role,
+          violationType: 'UNAUTHORIZED_ROLE_ACTION',
+          resource: `PORTAL_${department}`,
+          attemptedAction: 'DEPARTMENT_PORTAL_LOGIN',
+          reason: `Cross-department access blocked. User belongs to '${matchedPreset.department}' (${matchedPreset.role}), not '${department}'.`,
+        },
+        db
+      );
+    }
+    return {
+      success: false,
+      error: `Department Access Denied: User account is registered to ${matchedPreset.department} (${matchedPreset.role}). Only authorized ${department} personnel may access this portal.`,
+      errorCode: 'DEPARTMENT_ACCESS_DENIED',
+    };
+  }
+
+  // 4. Passcode validation (minimum 4 characters, or demo passcode)
+  if (!isDemo && (!passcode || passcode.length < 4)) {
+    globalRateLimiter.recordAuthFailure(identifier);
+    return {
+      success: false,
+      error: 'Cryptographic passcode must be at least 4 characters.',
+      errorCode: 'INVALID_CREDENTIALS',
+    };
+  }
+
+  // 5. Check if user is suspended or deactivated in DB
+  if (db) {
+    const dbUser = db.getUser(matchedPreset.user_id);
+    if (dbUser && (dbUser.active_status === 'SUSPENDED' || dbUser.active_status === 'INACTIVE')) {
+      return {
+        success: false,
+        error: `User account '${matchedPreset.user_id}' is ${dbUser.active_status}. Please contact the System Administrator.`,
+        errorCode: 'USER_SUSPENDED',
+      };
+    }
+  }
+
+  // Reset failures on success
+  globalRateLimiter.resetAuthFailures(identifier);
+
+  // 6. Create authenticated session with HMAC token
+  const session = createAuthSession({
+    id: matchedPreset.user_id,
+    role: matchedPreset.role,
+    department: matchedPreset.department,
+    badge: matchedPreset.badge,
+    active_status: 'ACTIVE',
+  });
+
+  if (db) {
+    await db.recordAuditEvent({
+      actor_id: matchedPreset.user_id,
+      actor_role: matchedPreset.role,
+      department: matchedPreset.department,
+      action: isDemo ? 'DEMO_LOGIN_SUCCESS' : 'DEPARTMENT_LOGIN_SUCCESS',
+      entity_type: 'USER',
+      entity_id: matchedPreset.user_id,
+      status: 'SUCCESS',
+      ip_address: '127.0.0.1',
+      payload: {
+        badge: matchedPreset.badge,
+        name: matchedPreset.name,
+        department,
+        isDemo: !!isDemo,
+      },
+    });
+  }
+
+  return {
+    success: true,
+    session,
+    user: matchedPreset,
+  };
 }
 
 // ----------------------------------------------------------------------------

@@ -335,6 +335,7 @@ export class EvidenceVaultDatabase {
     };
 
     this.auditEvents.push(event);
+    this.updateSnapshot();
     return event;
   }
 

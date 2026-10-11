@@ -6,6 +6,7 @@ import { AdminPortalDashboard } from './components/AdminPortalDashboard.tsx';
 import { LandingPage } from './components/LandingPage.tsx';
 import { WorkspaceHeader } from './components/WorkspaceHeader.tsx';
 import { EvidenceWorkspace } from './components/EvidenceWorkspace.tsx';
+import { CyberDashboard } from './components/CyberDashboard.tsx';
 import { CreateCaseModal } from './components/modals/CreateCaseModal.tsx';
 import { RegisterEvidenceModal } from './components/modals/RegisterEvidenceModal.tsx';
 import { RejectTransferModal } from './components/modals/RejectTransferModal.tsx';
@@ -26,129 +27,208 @@ export type { AuthenticatedSession };
 export default function App() {
   const v = useVaultOperations();
 
-  // If no user is logged in, show institutional 3-Portal Landing Page
+  // If no user is logged in, show institutional 3-Portal Landing Page with unified Step-Up Biometric Face Scan
   if (!v.currentUser) {
     return (
-      <LandingPage
-        onOpenLoginModal={v.handleOpenLoginModal}
-        portalLoginModal={v.portalLoginModal}
-        onCloseLoginModal={() => v.setPortalLoginModal(null)}
-        loginBadgeInput={v.loginBadgeInput}
-        setLoginBadgeInput={v.setLoginBadgeInput}
-        loginPinInput={v.loginPinInput}
-        setLoginPinInput={v.setLoginPinInput}
-        biometricRequireMfa={v.biometricRequireMfa}
-        setBiometricRequireMfa={v.setBiometricRequireMfa}
-        handleConfirmLogin={v.handleConfirmLogin}
-        handleSimulateFailedLogin={v.handleSimulateFailedLogin}
-        onInstantLogin={(dept) => {
-          const session = DEPARTMENT_PRESETS[dept];
-          v.setCurrentUser(session);
-          v.setActiveDept(dept);
-          v.setPortalLoginModal(null);
-        }}
-        onOpenAdmin={() => {
-          v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
-          v.setActiveDept('ADMINISTRATION');
-        }}
-        showFaqModal={v.showFaqModal}
-        setShowFaqModal={v.setShowFaqModal}
-      />
+      <>
+        <LandingPage
+          onOpenLoginModal={v.handleOpenLoginModal}
+          portalLoginModal={v.portalLoginModal}
+          onCloseLoginModal={() => {
+            v.setPortalLoginModal(null);
+            v.setLoginError(null);
+          }}
+          loginBadgeInput={v.loginBadgeInput}
+          setLoginBadgeInput={v.setLoginBadgeInput}
+          loginPinInput={v.loginPinInput}
+          setLoginPinInput={v.setLoginPinInput}
+          loginError={v.loginError}
+          biometricRequireMfa={v.biometricRequireMfa}
+          setBiometricRequireMfa={v.setBiometricRequireMfa}
+          handleConfirmLogin={v.handleConfirmLogin}
+          handleSimulateFailedLogin={v.handleSimulateFailedLogin}
+          onInstantLogin={v.handleInstantLogin}
+          onOpenAdmin={() => {
+            v.handleInstantLogin('ADMINISTRATION');
+          }}
+          showFaqModal={v.showFaqModal}
+          setShowFaqModal={v.setShowFaqModal}
+        />
+
+        {/* Unified Face Verification Modal for all Three Portals */}
+        <BiometricScanModal
+          isOpen={v.showBiometricScanModal}
+          onClose={() => v.setShowBiometricScanModal(false)}
+          targetUser={v.biometricTargetUser}
+          department={v.biometricTargetUser?.department}
+          consentMap={v.biometricConsentMap}
+          onToggleConsent={v.handleToggleConsent}
+          scanOutcome={v.biometricScanOutcome}
+          isScanning={v.biometricIsScanning}
+          livenessTestResult={v.biometricLivenessTestResult}
+          onStartVerification={v.handleStartBiometricVerification}
+          fallbackPinInput={v.biometricFallbackPinInput}
+          setFallbackPinInput={v.setBiometricFallbackPinInput}
+          fallbackError={v.biometricFallbackError}
+          onFallbackPinSubmit={v.handleFallbackPinSubmit}
+          onProceedToWorkspace={(user) => {
+            v.setCurrentUser(user);
+            v.setActiveDept(user.department);
+            v.setShowBiometricScanModal(false);
+          }}
+        />
+      </>
     );
   }
 
-  // SYSTEM_ADMIN in ADMINISTRATION department gets dedicated Admin Dashboard
-  if (v.currentUser.role === 'SYSTEM_ADMIN' && v.activeDept === 'ADMINISTRATION') {
-    return (
-      <AdminPortalDashboard
-        currentUser={v.currentUser}
-        globalDb={globalDb}
-        globalStorageEngine={globalStorageEngine}
-        cases={v.cases}
-        evidence={v.evidence}
-        handoffs={v.handoffs}
-        reports={v.reports}
-        reviews={v.reviews}
-        onLogout={() => v.setCurrentUser(null)}
-        onSwitchDepartment={(dept) => {
-          v.setCurrentUser(DEPARTMENT_PRESETS[dept]);
-          v.setActiveDept(dept);
-        }}
-      />
-    );
-  }
-
-  // Active Department Logged-in Interface
+  // Active Department Logged-in Interface with Cyber Dashboard Navigation
   return (
     <div className="ev-app">
-      <WorkspaceHeader
-        currentUser={v.currentUser}
-        networkStatus={v.networkStatus}
-        offlineQueue={v.offlineQueue}
-        onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
-        onToggleNetwork={v.handleToggleNetwork}
-        onOpenAdmin={() => {
-          v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
-          v.setActiveDept('ADMINISTRATION');
-        }}
-        onLogout={() => v.setCurrentUser(null)}
-        caseCount={v.cases.length}
-        evidenceCount={v.evidence.length}
-        offlineNotice={v.offlineNotice}
-        seedNotice={v.seedNotice}
-        verificationFeedback={v.verificationFeedback}
-        activeDept={v.activeDept}
-        setActiveDept={v.setActiveDept}
-        onSwitchUser={(session) => {
-          v.setCurrentUser(session);
-          v.setActiveDept(session.department);
-        }}
-      />
+      {v.activeNavTab === 'DASHBOARD' ? (
+        <CyberDashboard
+          currentUser={v.currentUser}
+          cases={v.cases}
+          evidence={v.evidence}
+          handoffs={v.handoffs}
+          reports={v.reports}
+          reviews={v.reviews}
+          onOpenCreateCaseModal={() => v.setShowCreateCaseModal(true)}
+          onOpenRegisterEvidenceModal={() => v.setShowRegisterEvidenceModal(true)}
+          onOpenCaseIndex={v.handleOpenCaseIndex}
+          onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+          onNavigateTab={(tab) => {
+            if (tab === 'DASHBOARD') {
+              v.setActiveNavTab('DASHBOARD');
+            } else if (tab === 'EVIDENCE') {
+              v.setActiveNavTab('EVIDENCE');
+              v.setActiveDept('POLICE');
+              v.setShowRegisterEvidenceModal(true);
+            } else if (tab === 'CASES') {
+              v.setActiveNavTab('CASES');
+              v.setActiveDept('POLICE');
+            } else if (tab === 'FORENSICS') {
+              v.setActiveNavTab('FORENSICS');
+              v.setActiveDept('FORENSIC');
+            } else if (tab === 'REPORTS') {
+              v.setActiveNavTab('REPORTS');
+              v.setActiveDept('PROSECUTION');
+            } else if (tab === 'CUSTODY') {
+              v.setActiveNavTab('CUSTODY');
+              v.setShowAuditDashboardModal(true);
+            } else if (tab === 'USERS') {
+              v.setActiveNavTab('USERS');
+              v.setActiveDept('ADMINISTRATION');
+            } else if (tab === 'SETTINGS') {
+              v.setActiveNavTab('SETTINGS');
+              v.setShowOfflineCenterModal(true);
+            }
+          }}
+          onSwitchUser={(session) => {
+            v.setCurrentUser(session);
+            v.setActiveDept(session.department);
+          }}
+          onLogout={() => {
+            v.setCurrentUser(null);
+            v.setActiveNavTab('DASHBOARD');
+          }}
+        />
+      ) : v.currentUser.role === 'SYSTEM_ADMIN' && v.activeDept === 'ADMINISTRATION' ? (
+        <AdminPortalDashboard
+          currentUser={v.currentUser}
+          globalDb={globalDb}
+          globalStorageEngine={globalStorageEngine}
+          cases={v.cases}
+          evidence={v.evidence}
+          handoffs={v.handoffs}
+          reports={v.reports}
+          reviews={v.reviews}
+          onLogout={() => {
+            v.setCurrentUser(null);
+            v.setActiveNavTab('DASHBOARD');
+          }}
+          onSwitchDepartment={(dept) => {
+            v.setCurrentUser(DEPARTMENT_PRESETS[dept]);
+            v.setActiveDept(dept);
+          }}
+        />
+      ) : (
+        <>
+          <WorkspaceHeader
+            currentUser={v.currentUser}
+            networkStatus={v.networkStatus}
+            offlineQueue={v.offlineQueue}
+            onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+            onToggleNetwork={v.handleToggleNetwork}
+            onOpenAdmin={() => {
+              v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
+              v.setActiveDept('ADMINISTRATION');
+              v.setActiveNavTab('USERS');
+            }}
+            onLogout={() => {
+              v.setCurrentUser(null);
+              v.setActiveNavTab('DASHBOARD');
+            }}
+            caseCount={v.cases.length}
+            evidenceCount={v.evidence.length}
+            offlineNotice={v.offlineNotice}
+            seedNotice={v.seedNotice}
+            verificationFeedback={v.verificationFeedback}
+            activeDept={v.activeDept}
+            setActiveDept={v.setActiveDept}
+            onSwitchUser={(session) => {
+              v.setCurrentUser(session);
+              v.setActiveDept(session.department);
+            }}
+            onOpenCyberDashboard={() => v.setActiveNavTab('DASHBOARD')}
+          />
 
-      <EvidenceWorkspace
-        activeDept={v.activeDept}
-        currentUser={v.currentUser}
-        cases={v.cases}
-        evidence={v.evidence}
-        handoffs={v.handoffs}
-        reports={v.reports}
-        reviews={v.reviews}
-        selectedCaseId={v.selectedCaseId}
-        setSelectedCaseId={v.setSelectedCaseId}
-        offlineQueue={v.offlineQueue}
-        storageMetrics={v.storageMetrics}
-        setStorageMetrics={v.setStorageMetrics}
-        onOpenCreateCaseModal={() => v.setShowCreateCaseModal(true)}
-        onOpenRegisterEvidenceModal={() => v.setShowRegisterEvidenceModal(true)}
-        onOpenCaseIndex={v.handleOpenCaseIndex}
-        onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
-        verifyingFileId={v.verifyingFileId}
-        onRunVerification={v.handleRunVerification}
-        onSimulateTamper={v.handleSimulateTamper}
-        onRestorePristine={v.handleRestorePristine}
-        onViewHistory={(id) => v.setViewingHistoryFileVersionId(id)}
-        onDownloadArtifact={v.handleDownloadArtifact}
-        onSubmitToForensics={v.handleSubmitToForensics}
-        onAcceptTransfer={v.handleAcceptTransfer}
-        onRejectTransfer={(data) => v.setRejectModalData(data)}
-        onStartExam={v.handleStartExam}
-        onMarkReportReady={v.handleMarkReportReady}
-        newFindingText={v.newFindingText}
-        setNewFindingText={v.setNewFindingText}
-        onAddReportVersion={v.handleAddReportVersion}
-        prosecutionNotes={v.prosecutionNotes}
-        setProsecutionNotes={v.setProsecutionNotes}
-        onProsecutionDecision={v.handleProsecutionDecision}
-        onSwitchToAdmin={() => {
-          v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
-          v.setActiveDept('ADMINISTRATION');
-        }}
-        onReturnToDept={(dept) => v.setActiveDept(dept)}
-        onSwitchUser={(session) => {
-          v.setCurrentUser(session);
-          v.setActiveDept(session.department);
-        }}
-      />
+          <EvidenceWorkspace
+            activeDept={v.activeDept}
+            currentUser={v.currentUser}
+            cases={v.cases}
+            evidence={v.evidence}
+            handoffs={v.handoffs}
+            reports={v.reports}
+            reviews={v.reviews}
+            selectedCaseId={v.selectedCaseId}
+            setSelectedCaseId={v.setSelectedCaseId}
+            offlineQueue={v.offlineQueue}
+            storageMetrics={v.storageMetrics}
+            setStorageMetrics={v.setStorageMetrics}
+            onOpenCreateCaseModal={() => v.setShowCreateCaseModal(true)}
+            onOpenRegisterEvidenceModal={() => v.setShowRegisterEvidenceModal(true)}
+            onOpenCaseIndex={v.handleOpenCaseIndex}
+            onOpenOfflineCenter={() => v.setShowOfflineCenterModal(true)}
+            verifyingFileId={v.verifyingFileId}
+            onRunVerification={v.handleRunVerification}
+            onSimulateTamper={v.handleSimulateTamper}
+            onRestorePristine={v.handleRestorePristine}
+            onViewHistory={(id) => v.setViewingHistoryFileVersionId(id)}
+            onDownloadArtifact={v.handleDownloadArtifact}
+            onSubmitToForensics={v.handleSubmitToForensics}
+            onAcceptTransfer={v.handleAcceptTransfer}
+            onRejectTransfer={(data) => v.setRejectModalData(data)}
+            onStartExam={v.handleStartExam}
+            onMarkReportReady={v.handleMarkReportReady}
+            newFindingText={v.newFindingText}
+            setNewFindingText={v.setNewFindingText}
+            onAddReportVersion={v.handleAddReportVersion}
+            prosecutionNotes={v.prosecutionNotes}
+            setProsecutionNotes={v.setProsecutionNotes}
+            onProsecutionDecision={v.handleProsecutionDecision}
+            onSwitchToAdmin={() => {
+              v.setCurrentUser(DEPARTMENT_PRESETS.ADMINISTRATION);
+              v.setActiveDept('ADMINISTRATION');
+              v.setActiveNavTab('USERS');
+            }}
+            onReturnToDept={(dept) => v.setActiveDept(dept)}
+            onSwitchUser={(session) => {
+              v.setCurrentUser(session);
+              v.setActiveDept(session.department);
+            }}
+          />
+        </>
+      )}
 
       {/* Modals */}
       <CreateCaseModal

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "node --experimental-strip-types --test src/data/__tests__/repository.test.ts src/data/__tests__/phase10_e2e_integration.test.ts src/data/__tests__/admin_dashboard_security.test.ts",
+    "test": "node --experimental-strip-types --test src/data/__tests__/repository.test.ts src/data/__tests__/phase10_e2e_integration.test.ts src/data/__tests__/admin_dashboard_security.test.ts src/data/__tests__/unified_face_auth.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

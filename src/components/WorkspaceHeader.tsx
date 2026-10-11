@@ -35,6 +35,7 @@ export interface WorkspaceHeaderProps {
   activeDept: Department | 'AUDIT' | 'STORAGE';
   setActiveDept: (dept: Department | 'AUDIT' | 'STORAGE') => void;
   onSwitchUser?: (session: AuthenticatedSession) => void;
+  onOpenCyberDashboard?: () => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -53,6 +54,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   activeDept,
   setActiveDept,
   onSwitchUser,
+  onOpenCyberDashboard,
 }) => {
   const pendingCount = offlineQueue.filter(
     (q) => q.status === 'PENDING' || q.status === 'CONFLICT'
@@ -396,6 +398,24 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             <ShieldCheckIcon size={14} />
             Prosecution Portal
           </button>
+
+          {onOpenCyberDashboard && (
+            <button
+              type="button"
+              className="ev-portal-choice-btn"
+              style={{
+                background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(59, 130, 246, 0.3) 100%)',
+                border: '1px solid #00d2ff',
+                color: '#38bdf8',
+                fontWeight: 600,
+              }}
+              onClick={onOpenCyberDashboard}
+              title="Return to Cyber Forensics Command Dashboard"
+            >
+              <ShieldCheckIcon size={14} />
+              🛡️ Cyber Dashboard
+            </button>
+          )}
         </div>
       </div>
     </>

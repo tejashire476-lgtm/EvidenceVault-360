@@ -20,6 +20,7 @@ import {
   AuditReviewEngine,
   AuditReviewScheduler,
 } from '../utils/auditReview.ts';
+import { authenticateDepartmentPortal } from '../utils/security.ts';
 import type {
   Department,
   EvidenceType,
@@ -55,11 +56,13 @@ export function useVaultOperations() {
   const [portalLoginModal, setPortalLoginModal] = useState<Department | null>(null);
   const [loginBadgeInput, setLoginBadgeInput] = useState('');
   const [loginPinInput, setLoginPinInput] = useState('••••••••');
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [showFaqModal, setShowFaqModal] = useState(false);
   const [showSecurityLogsModal, setShowSecurityLogsModal] = useState(false);
 
   // Active Workspace State
   const [activeDept, setActiveDept] = useState<Department | 'AUDIT' | 'STORAGE'>('POLICE');
+  const [activeNavTab, setActiveNavTab] = useState<'DASHBOARD' | 'EVIDENCE' | 'CASES' | 'FORENSICS' | 'REPORTS' | 'CUSTODY' | 'USERS' | 'SETTINGS'>('DASHBOARD');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('CASE-2026-001');
   const [newFindingText, setNewFindingText] = useState('');
   const [seedNotice, setSeedNotice] = useState<string | null>(null);
@@ -197,30 +200,27 @@ export function useVaultOperations() {
     setPortalLoginModal(dept);
     setLoginBadgeInput(DEPARTMENT_PRESETS[dept].badge);
     setLoginPinInput('••••••••');
+    setLoginError(null);
   };
 
   const handleConfirmLogin = async (dept: Department) => {
-    const session = DEPARTMENT_PRESETS[dept];
-    try {
-      await globalDb.recordAuditEvent({
-        actor_id: session.user_id,
-        actor_role: session.role,
-        department: session.department,
-        action: 'AUTH_LOGIN_SUCCESS',
-        entity_type: 'USER',
-        entity_id: session.user_id,
-        status: 'SUCCESS',
-        ip_address: '127.0.0.1',
-        user_agent: navigator.userAgent,
-        payload: {
-          badge: session.badge,
-          name: session.name,
-          login_method: biometricRequireMfa ? 'MFA_STEP_UP' : 'INSTANT_PASSCODE',
-        },
-      });
-    } catch (err) {
-      console.warn('Audit recording non-fatal:', err);
+    setLoginError(null);
+    const authResult = await authenticateDepartmentPortal(
+      {
+        department: dept,
+        badge: loginBadgeInput || DEPARTMENT_PRESETS[dept].badge,
+        passcode: loginPinInput,
+        isDemo: false,
+      },
+      globalDb
+    );
+
+    if (!authResult.success) {
+      setLoginError(authResult.error || 'Department access denied.');
+      return;
     }
+
+    const session = authResult.user!;
 
     if (biometricRequireMfa) {
       setBiometricTargetUser(session);
@@ -232,6 +232,27 @@ export function useVaultOperations() {
       setCurrentUser(session);
       setActiveDept(dept);
       setPortalLoginModal(null);
+    }
+  };
+
+  const handleInstantLogin = async (dept: Department) => {
+    setLoginError(null);
+    const authResult = await authenticateDepartmentPortal(
+      {
+        department: dept,
+        badge: DEPARTMENT_PRESETS[dept].badge,
+        passcode: '••••••••',
+        isDemo: true,
+      },
+      globalDb
+    );
+
+    if (authResult.success && authResult.user) {
+      setCurrentUser(authResult.user);
+      setActiveDept(dept);
+      setPortalLoginModal(null);
+    } else if (authResult.error) {
+      setLoginError(authResult.error);
     }
   };
 
@@ -272,19 +293,24 @@ export function useVaultOperations() {
     }));
   };
 
-  const handleStartBiometricVerification = async (scenario: 'MATCH' | 'MISMATCH' | 'SPOOF') => {
+  const handleStartBiometricVerification = async (
+    scenario: 'MATCH' | 'MISMATCH' | 'SPOOF' = 'MATCH',
+    candidateVector?: number[]
+  ) => {
     if (!biometricTargetUser) return;
     setBiometricIsScanning(true);
     setBiometricScanOutcome(null);
     setBiometricFallbackError(null);
 
-    await new Promise((r) => setTimeout(r, 450));
+    await new Promise((r) => setTimeout(r, 400));
 
-    let candidateVec: number[] | undefined;
+    let candidateVec = candidateVector;
     let challengeResponseValid = true;
 
     if (scenario === 'MATCH') {
-      candidateVec = globalBiometricEngine.generateCandidateVector(biometricTargetUser.user_id, 0.02);
+      if (!candidateVec || candidateVec.length !== 128) {
+        candidateVec = globalBiometricEngine.generateCandidateVector(biometricTargetUser.user_id, 0.02);
+      }
       challengeResponseValid = true;
       setBiometricLivenessTestResult('CHALLENGE_PASSED');
     } else if (scenario === 'MISMATCH') {
@@ -312,7 +338,7 @@ export function useVaultOperations() {
         setCurrentUser(biometricTargetUser);
         setActiveDept(biometricTargetUser.department);
         setShowBiometricScanModal(false);
-      }, 1200);
+      }, 1000);
     }
   };
 
@@ -1261,8 +1287,13 @@ export function useVaultOperations() {
     auditIsGenerating,
     auditExportFeedback,
     auditSchedulerInfo,
+    activeNavTab,
+    setActiveNavTab,
+    loginError,
+    setLoginError,
     handleOpenLoginModal,
     handleConfirmLogin,
+    handleInstantLogin,
     handleSimulateFailedLogin,
     handleToggleConsent,
     handleStartBiometricVerification,
